@@ -7,10 +7,17 @@ import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.SearchView;
 
+
+import com.google.android.gms.tasks.Task;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
@@ -44,6 +51,9 @@ public class Fragment_NavMenu_FavoriteTasks extends Fragment {
 
     //Initialize the recyclerView
     RecyclerView recyclerViewTaskData;
+    TaskDataViewAdapter adapter;
+
+    List<TaskData> taskDataListItems;
 
     public Fragment_NavMenu_FavoriteTasks() {
         // Required empty public constructor
@@ -74,6 +84,9 @@ public class Fragment_NavMenu_FavoriteTasks extends Fragment {
             mParam1 = getArguments().getString(ARG_PARAM1);
             mParam2 = getArguments().getString(ARG_PARAM2);
         }
+
+        //This enables the search menu function --> further implementation in "onPrepareOptionsMenu"
+        setHasOptionsMenu(true);
     }
 
     @Override
@@ -94,9 +107,9 @@ public class Fragment_NavMenu_FavoriteTasks extends Fragment {
         recyclerViewTaskData.setLayoutManager(new LinearLayoutManager(getContext()));
 
         // Create a new instance of a ArrayList; Initialize the above defined listitem object
-        final List<TaskData> taskDataListItems = new ArrayList<>();
+        taskDataListItems = new ArrayList<>();
         // Instanciate a new adapter for the Recycleview and parse the "listitem" and "Context"
-        final TaskDataViewAdapter adapter = new TaskDataViewAdapter(taskDataListItems, getContext());
+        adapter = new TaskDataViewAdapter(taskDataListItems, getContext());
         //set the adapter to the recyclerview
         recyclerViewTaskData.setAdapter(adapter);
 
@@ -140,6 +153,9 @@ public class Fragment_NavMenu_FavoriteTasks extends Fragment {
 
                 // notify the adapter that data has been changed and needs to be refreshed
                 adapter.notifyDataSetChanged();
+
+                //save Sharred preferences (Listsize)
+                saveSharedPreferences();
             }
 
             @Override
@@ -151,6 +167,57 @@ public class Fragment_NavMenu_FavoriteTasks extends Fragment {
 
         // Inflate the layout for this fragment
         return view;
+    }
+
+    //This picks the searchview from Resources.
+    @Override
+    public void onPrepareOptionsMenu(Menu menu) {
+        MenuItem mSearchMenuItem = menu.findItem(R.id.mSearchView);
+        SearchView searchView = (SearchView) mSearchMenuItem.getActionView();
+    }
+
+    @Override
+    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
+        super.onCreateOptionsMenu(menu, inflater);
+
+        // Inflate the menu; this adds items to the action bar if it is present.
+        inflater.inflate(R.menu.search_view, menu);
+
+        MenuItem searchItem = menu.findItem(R.id.mSearchView);
+        SearchView searchView = (android.widget.SearchView) searchItem.getActionView();
+
+        searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
+            @Override
+            public boolean onQueryTextSubmit(String query) {
+                return false;
+            }
+
+            @Override
+            public boolean onQueryTextChange(String queryText) {
+                // Here is where we are going to implement the filter logic
+                Log.d("Looking for: ", queryText);
+                executeQuery(queryText);
+                return false;
+            }
+        });
+    }
+
+    /***********************************************************************************************
+     * Method will be called every time a figure has been changed in the search bar
+     **********************************************************************************************/
+    public void executeQuery(String queryText){
+        // 1. Create a new array list for the items matching the query
+        ArrayList<TaskData> filteredList = new ArrayList<>();
+        // 2. for every Item in the list displayed by the recycleview...
+        for (TaskData taskData : taskDataListItems){
+            // 3. ...make the data and query case insensitive and search for the query and add it to the newly created
+            if (taskData.getContent().toLowerCase().contains(queryText.toLowerCase())){
+                filteredList.add(taskData);
+            }
+
+            //set the list to the adaptermethod "filterList()"
+            adapter.filterList(filteredList);
+        }
     }
 
     // TODO: Rename method, update argument and hook method into UI event
@@ -179,5 +246,19 @@ public class Fragment_NavMenu_FavoriteTasks extends Fragment {
     public interface OnFragmentInteractionListener {
         // TODO: Update argument type and name
         void onFragmentInteraction(Uri uri);
+    }
+
+    /***********************************************************************************************
+     * SAVE SHARED PREFERENCES TO FILE
+     **********************************************************************************************/
+    public void saveSharedPreferences(){
+        // 1. Open Shared Preference File
+        SharedPreferences mSharedPref = getContext().getSharedPreferences("mSharePrefFile", 0);
+        // 2. Initialize Editor Class
+        SharedPreferences.Editor editor = mSharedPref.edit();
+        // 3. Get Values from fields and store in Shared Preferences
+        editor.putInt("listSizeTasksFavorite", taskDataListItems.size()-1);
+        // 4. Store the keys
+        editor.commit();
     }
 }

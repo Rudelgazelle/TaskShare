@@ -179,12 +179,9 @@ public class AddTaskActivity extends AppCompatActivity {
                 //After saving procedure the view is navigated back to the main menu
                 Intent addTaskActivityIntent = new Intent(AddTaskActivity.this, NavigationActivity.class);
                 AddTaskActivity.this.startActivity(addTaskActivityIntent);
-
             }
         });
-
-
-        }
+    }
 
     //return date picker dialog
     @Override

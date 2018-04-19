@@ -63,7 +63,6 @@ public class NavigationActivity extends AppCompatActivity
     public String userID ="";
     public String userName;
     public String userMail;
-    public String userPassword;
     public Uri userProfilePhotoUrl;
 
     //Initialize Objects for User data in NavHeader
@@ -71,7 +70,6 @@ public class NavigationActivity extends AppCompatActivity
     public TextView tvUserName;
     public TextView tvUserMail;
     public Button btnUserSetting;
-    public Button btnTest;
 
     //Initialize FirebaseAuth instance
     public FirebaseAuth mAuth;
@@ -84,28 +82,12 @@ public class NavigationActivity extends AppCompatActivity
     // Initialize the Firebase Database instance and query
     FirebaseDatabase database;
     DatabaseReference dbRef;
-    DatabaseReference dbRefForMenu;
-    Query query;
-    String queryContent;
-
-    //Initialize recyclerview that will be filled with data and enable swipelayout
-    public RecyclerView recyclerViewTaskData;
-    SwipeRefreshLayout mSwipeRefreshLayout;
-
-    public TaskDataViewAdapter adapter;
-    public TaskDataViewAdapter filterAdapter;
-
-
-    //Initialize ArrayList for datasnapshot for recyclerview
-    private List<TaskData> taskDataListItems;
-    private List<TaskData> filteredList;
 
     // adding a section and items into menu
     Menu menu;
     SubMenu subMenuGroups;
     int groupID;
     int itemID;
-    int itemIdentifyer = 1;
     int itemOrder = 0;
     String itemTitle;
     String activityTitle;
@@ -114,10 +96,11 @@ public class NavigationActivity extends AppCompatActivity
 
     //VARIABLES FOR MENU GROUP ITEMS
     private List<GroupData> menuGroupItemList;
-    private List<Integer> menuIdVariables;
+    private Integer taskDataListAllSize;
+    private Integer taskDataListFavoriteSize;
+    private Integer taskDataListOverdueSize;
 
-    //Initialize progressdialog object
-    ProgressDialog progressDialog;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -128,7 +111,7 @@ public class NavigationActivity extends AppCompatActivity
 
         //Set default Fragment if no Saved Instance is available
         if (savedInstanceState == null) {
-            Fragment_NavMenu_AllTasks fragment= new Fragment_NavMenu_AllTasks();
+            Fragment_NavMenu_AllTasks fragment = new Fragment_NavMenu_AllTasks();
             FragmentTransaction fragmentTransaction = getSupportFragmentManager().beginTransaction();
             fragmentTransaction.add(R.id.content_main_navigation, fragment);
             fragmentTransaction.commit();
@@ -141,19 +124,35 @@ public class NavigationActivity extends AppCompatActivity
 
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
         ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
-                this, drawer, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
+                this, drawer, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close){
+            @Override
+            public void onDrawerOpened(View drawerView) {
+                super.onDrawerOpened(drawerView);
+
+                //load shared preference, to get the updated variable of listsize
+                loadSharedPreferences();
+
+                //set a new title with the list size of each Menu item at the end
+                String mNewTitleAll = getResources().getString(R.string.navigation_drawer_submenu_general_allTasks) + " (" +taskDataListAllSize.toString()+")";
+                menu.findItem(R.id.nav_allTasks).setTitle(mNewTitleAll);
+
+                String mNewTitleFavorite = getResources().getString(R.string.navigation_drawer_submenu_general_favoriteTasks) + " (" +taskDataListFavoriteSize.toString()+")";
+                menu.findItem(R.id.nav_favoriteTasks).setTitle(mNewTitleFavorite);
+
+                String mNewTitleOverdue = getResources().getString(R.string.navigation_drawer_submenu_general_overdueTasks) + " (" +taskDataListOverdueSize.toString()+")";
+                menu.findItem(R.id.nav_overdueTasks).setTitle(mNewTitleOverdue);
+            }
+        };
+        // Set the drawer toggle as the DrawerListener
         drawer.addDrawerListener(toggle);
         toggle.syncState();
+
 
         final NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
 
+        //declare menu variable to be used in different methods
         menu = navigationView.getMenu();
-        //subMenuGroups = (SubMenu) findViewById(R.id.groupMenu);
-        //subMenuGroups = subMenuGroups.getItem(R.id.groupMenu);
-        subMenuGroups = menu.addSubMenu(R.string.navigation_drawer_submenu_group_title).setIcon(R.drawable.ic_action_alarm_yellow);
-
-
 
         //------------------------------------------------------------------------------------------
         //Initialize object fields for User data // SET VIEW FOR HEADER VIEW FIRST!!!!
@@ -185,13 +184,14 @@ public class NavigationActivity extends AppCompatActivity
             }
         });
 
-
-
         /***********************************************************************************************
          *
          * METHOD TO ADD/DELETE/CHANGE MENU ITEMS IN DRAWER MENU
          *
          **********************************************************************************************/
+
+        //Create Submenu for groups in the navDrawer
+        subMenuGroups = menu.addSubMenu(R.string.navigation_drawer_submenu_group_title);
 
         // Create a new instance of a ArrayList; Initialize the above defined listitem object
         menuGroupItemList = new ArrayList<>();
@@ -199,9 +199,6 @@ public class NavigationActivity extends AppCompatActivity
         //TODO: CHANGE THE HARD CODED GROUP CODE TO SOMETHING ELSE
         DatabaseReference dbRefGroup = dbRef.child("group");
         Query query = dbRefGroup;
-        //Query query = dbRefGroup.equalTo(userID);
-
-        //groupID = R.id.groupMenu;
 
         //set a ValueEventlistener to the database reference that listens if changes are being made to the data
         query.addChildEventListener(new ChildEventListener() {
@@ -211,14 +208,16 @@ public class NavigationActivity extends AppCompatActivity
                 GroupData groupData = dataSnapshot.getValue(GroupData.class);
                 //add the retrieved data to the ArrayList
                 menuGroupItemList.add(groupData);
+                //set groupid to the Group for GroupTasks defined in "activity_navigation_drawer"
+                //groupID = R.id.groupGroupTasks;
                 //generate Item identifier and set as ItemID
                 itemID = View.generateViewId();
-                //itemID = menuGroupItemList.size()-1;
+                //set the order to NONE
+                itemOrder = Menu.NONE;
                 //set variables for submenu item
                 itemTitle = groupData.getName();
                 //add submenu item with the specified variables
-                subMenuGroups.add(groupID, itemID, itemOrder, itemTitle);
-                //subMenuGroups.add(itemTitle).setIcon(R.drawable.ic_menu_share);
+                subMenuGroups.add(groupID, itemID, itemOrder, itemTitle).setIcon(R.drawable.ic_menu_share);
             }
 
             @Override
@@ -226,7 +225,6 @@ public class NavigationActivity extends AppCompatActivity
                 //Log.d("Index", "Index: " + dataSnapshot.getKey());
                 index = 0;
                 String snapShotKey = dataSnapshot.getKey();
-                //String snapShotKey = "xxxx";
 
                 Log.d("Menu", "snapShotKey: " + dataSnapshot.getKey());
 
@@ -345,15 +343,6 @@ public class NavigationActivity extends AppCompatActivity
          * Method to update the user profile UI in the Drawer Menu
          **********************************************************************************************/
         updateUserdataUI(currentUser);
-
-        /***********************************************************************************************
-         * Method to update the to update the recyclerview
-         **********************************************************************************************/
-        prefillRecycleView();
-
-        //TODO: SET FRAGMENT FOR STARTSCREEN
-        /* NAVIGATION DRAWER: Show a specific fragment as start screen upon loading (IN THIS CASE THE EXPENSEHISTORY FRAGMENT)*/
-        //displaySelectedScreen(R.id.nav_ExpenseHistory);
     }
 
     @Override
@@ -366,48 +355,6 @@ public class NavigationActivity extends AppCompatActivity
         }
     }
 
-    /***********************************************************************************************
-     * Search Menu Tutorial at:
-     * https://stackoverflow.com/questions/30398247/how-to-filter-a-recyclerview-with-a-searchview
-     **********************************************************************************************/
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-
-/*        for (int i= 0; i == menuGroupItemList.size()-1; i++){
-            MenuItem item = menu.findItem(i);
-            item.setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
-                @Override
-                public boolean onMenuItemClick(MenuItem item) {
-                    //do stuff
-                    Toast.makeText(NavigationActivity.this, "You clicked on item: " + itemTitle, Toast.LENGTH_LONG).show();
-                    return true;
-                }
-            });
-        }*/
-        super.onCreateOptionsMenu(menu);
-        // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.search_view, menu);
-
-        final MenuItem searchItem = menu.findItem(R.id.mSearchView);
-        final SearchView searchView = (SearchView) searchItem.getActionView();
-
-        searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
-            @Override
-            public boolean onQueryTextSubmit(String query) {
-                return false;
-            }
-
-            @Override
-            public boolean onQueryTextChange(String queryText) {
-                // Here is where we are going to implement the filter logic
-                Log.d("Looking for: ", queryText);
-                executeQuery(queryText);
-                return false;
-            }
-        });
-
-        return true;
-    }
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
@@ -430,14 +377,8 @@ public class NavigationActivity extends AppCompatActivity
     public boolean onNavigationItemSelected(MenuItem item) {
         // Handle navigation view item clicks here.
         int id = item.getItemId();
-
-/*        if (id == subMenuGroups.getItem(0).getItemId()){
-            // do stuff
-        }*/
-
         //call the method and parse the id of the selected item
         displaySelectedScreen(id);
-
         return true;
     }
 
@@ -460,20 +401,23 @@ public class NavigationActivity extends AppCompatActivity
                 //initialize fragment
                 fragment = new Fragment_NavMenu_FavoriteTasks();
                 break;
+            case R.id.nav_overdueTasks:
+                //Set the title of the Activity according to the Fragment
+                activityTitle = getResources().getString(R.string.title_fragment_overdueTasks);
+                //initialize fragment
+                fragment = new Fragment_NavMenu_OverdueTasks();
+                break;
+            case R.id.nav_settings:
+                // open settings activity
+                Intent settingsActivityIntent = new Intent(NavigationActivity.this, SettingsActivity.class);
+                NavigationActivity.this.startActivity(settingsActivityIntent);
+                break;
             case R.id.nav_slideshow:
                 // open settings TEST activity
                 Intent settingsTestActivityIntent = new Intent(NavigationActivity.this, SettingsActivity2.class);
                 NavigationActivity.this.startActivity(settingsTestActivityIntent);
                 break;
-            case R.id.nav_manage:
-                // open settings activity
-                Intent settingsActivityIntent = new Intent(NavigationActivity.this, SettingsActivity.class);
-                NavigationActivity.this.startActivity(settingsActivityIntent);
-                break;
-            /*case idVariable1:
-                //do stuff
-                break;
-            case idVariable2:
+            /*case idVariable2:
                 //do stuff
                 break;
             case idVariable3:
@@ -509,8 +453,6 @@ public class NavigationActivity extends AppCompatActivity
         super.onStart();
         // Check if user is signed in (non-null) and update UI accordingly.
         mAuth.addAuthStateListener(authStateListener);
-        adapter.notifyDataSetChanged();
-        //updateUserdataUI(currentUser);
     }
 
     @Override
@@ -561,81 +503,19 @@ public class NavigationActivity extends AppCompatActivity
                 .into(ivUserProfile);
     }
 
-
-    private void prefillRecycleView(){
-
-        /***********************************************************************************************
-         * Initialize the Arraylist, adapter and set the adapter to the recycleView
-         **********************************************************************************************/
-
-        // Create a new instance of a ArrayList; Initialize the above defined listitem object
-        taskDataListItems = new ArrayList<>();
-        // Instanciate a new adapter for the Recycleview and parse the "listitem" and "Context"
-        adapter = new TaskDataViewAdapter(taskDataListItems, NavigationActivity.this);
-        //set the adapter to the recyclerview
-        //recyclerViewTaskData.setAdapter(adapter);
-
-        // set the database reference to the correct child object (TaskData)
-        dbRef = dbRef.child("taskdata").child(userID);
-        Query query = dbRef.orderByChild("datecreated");
-
-        //set a ValueEventlistener to the database reference that listens if changes are being made to the data
-        query.addValueEventListener(new ValueEventListener() {
-            @Override
-            public void onDataChange(DataSnapshot dataSnapshot) {
-
-                //delete all items from the list
-                taskDataListItems.clear(); //TODO: implement funtion that only single dataset is changed if necessary
-
-                //returns a collection of the children under the set database reference
-                Iterable<DataSnapshot> children = dataSnapshot.getChildren();
-
-                // Shake hands with each of the collected childrens
-                //Iterate over the collection of "children" specified above and put it into a variable called "child"
-                for (DataSnapshot child : children ) {
-                    //child.getValue(TravelExpenseData.class); "VOR STRG + ALT +V"
-                    TaskData taskData = child.getValue(TaskData.class);
-                    //add the retrieved data to the ArrayList
-                    taskDataListItems.add(taskData);
-                }
-
-                // notify the adapter that data has been changed and needs to be refreshed
-                adapter.notifyDataSetChanged();
-            }
-
-            @Override
-            public void onCancelled(DatabaseError databaseError) {
-
-            }
-        });
-    }
-
     /***********************************************************************************************
-     * Method will be called every time a figure has been changed in the search bar
+     * LOAD SHARED PREFERENCES FROM FILE
      **********************************************************************************************/
-    public void executeQuery(String queryText){
-        // 1. Create a new array list for the items matching the query
-        ArrayList<TaskData> filteredList = new ArrayList<>();
-        // 2. for every Item in the list displayed by the recycleview...
-        for (TaskData taskData : taskDataListItems){
+    public void loadSharedPreferences(){
 
-            // 3. ...make the data and query case insensitive and search for the query and add it to the newly created
-            if (taskData.getContent().toLowerCase().contains(queryText.toLowerCase())){
-                filteredList.add(taskData);
-            }
+        // 1. Open Shared Preference File
+        SharedPreferences mSharedPref = getSharedPreferences("mSharePrefFile", 0);
+        // 2. Key Reference from SharePrefFile to fields (If key dows not exist, the default value will be loaded
+        taskDataListAllSize = (mSharedPref.getInt("listSizeTasksAll", 0));
+        taskDataListFavoriteSize = (mSharedPref.getInt("listSizeTasksFavorite", 0));
+        taskDataListOverdueSize = (mSharedPref.getInt("listSizeTasksOverdue", 0));
 
-            adapter.filterList(filteredList);
-        }
-    }
 
-    public void getListWithItemIDs(){
-        //TODO: CREATE NEW STRING VARIABLES BASED ON ID
-        menuIdVariables = new ArrayList<Integer>();
-        for (int i = 0; i == menuGroupItemList.size()-1; i++){
-            menuIdVariables.add(subMenuGroups.getItem(i).getItemId());
-            Log.d("Menu", "ITEM ID TEST: " + subMenuGroups.getItem(i).getItemId());
-            Log.d("Menu", "ID COUNT: " + menuIdVariables.size());
-        }
     }
 
 }
