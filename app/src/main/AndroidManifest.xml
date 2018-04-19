@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="android_development.taskshare">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+
+    <!-- To auto-complete the email text field in the login form with the user's emails -->
+    <uses-permission android:name="android.permission.GET_ACCOUNTS" />
+    <uses-permission android:name="android.permission.READ_PROFILE" />
+    <uses-permission android:name="android.permission.READ_CONTACTS" />
+
+    <application
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/AppTheme">
+        <activity
+            android:name=".TaskOverviewActivity"
+            android:label="@string/app_name"
+            android:theme="@style/AppTheme.NoActionBar">
+
+            <!--
+                <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            -->
+        </activity>
+        <activity
+            android:name=".NavigationActivity"
+            android:label="@string/title_activity_navigation"
+            android:theme="@style/AppTheme.NoActionBar">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity android:name=".UserSettingsActivity">
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="android_development.taskshare.NavigationActivity" />
+        </activity>
+        <activity
+            android:name=".AddTaskActivity"
+            android:label="@string/title_activity_add_task"
+            android:theme="@style/AppTheme.NoActionBar">
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="android_development.taskshare.NavigationActivity" />
+        </activity>
+        <activity
+            android:name=".UserLoginActivity"
+            android:label="@string/title_activity_user_login">
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="android_development.taskshare.NavigationActivity" />
+        </activity>
+        <activity
+            android:name=".TaskDataDetailsActivity"
+            android:label="@string/title_activity_task_data_details"
+            android:parentActivityName=".NavigationActivity"
+            android:theme="@style/AppTheme.NoActionBar">
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="android_development.taskshare.NavigationActivity" />
+        </activity>
+        <activity android:name=".UserLoginStartActivity" />
+        <activity
+            android:name=".UserRegistrationActivity"
+            android:label="@string/title_activity_user_registration"
+            android:parentActivityName=".UserLoginStartActivity">
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="android_development.taskshare.UserLoginStartActivity" />
+        </activity>
+        <activity
+            android:name=".SettingsActivity"
+            android:label="@string/title_activity_settings"
+            android:parentActivityName=".NavigationActivity"
+            android:theme="@style/AppTheme.NoActionBar">
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="android_development.taskshare.NavigationActivity" />
+        </activity>
+        <activity
+            android:name=".SettingsActivity2"
+            android:label="@string/title_activity_settings2"
+            android:parentActivityName=".NavigationActivity">
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="android_development.taskshare.NavigationActivity" />
+        </activity>
+    </application>
+
+</manifest>

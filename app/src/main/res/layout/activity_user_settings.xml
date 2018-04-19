@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="utf-8"?>
+<android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context="android_development.taskshare.UserSettingsActivity">
+
+    <GridLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_marginLeft="@dimen/activity_margin_left_right"
+        android:layout_marginRight="@dimen/activity_margin_left_right"
+        android:columnCount="2"
+        android:rowCount="12">
+
+        <TextView
+            android:id="@+id/tvUserDisplayname"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_column="0"
+            android:layout_row="0"
+            android:text="User name"
+            android:textAppearance="@style/TextAppearance.AppCompat.Body2" />
+
+        <EditText
+            android:id="@+id/etUserName"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_column="0"
+            android:layout_row="1"
+            android:editable="false"
+            android:ems="10"
+            android:inputType="text" />
+
+        <Button
+            android:id="@+id/btnNameEditable"
+            style="@style/Widget.AppCompat.Button.Small"
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:layout_column="1"
+            android:layout_gravity="center_vertical"
+            android:layout_row="0"
+            android:layout_rowSpan="2"
+            android:background="@android:drawable/ic_menu_edit" />
+
+        <TextView
+            android:id="@+id/tvUserMail"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_column="0"
+            android:layout_row="2"
+            android:text="Mail adress:"
+            android:textAppearance="@style/TextAppearance.AppCompat.Body2" />
+
+        <EditText
+            android:id="@+id/etUserMail"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:ems="10"
+            android:layout_row="3"
+            android:layout_column="0"
+            android:inputType="textEmailAddress" />
+
+        <Button
+            android:id="@+id/btnMailEditable"
+            style="@style/Widget.AppCompat.Button.Small"
+            android:layout_column="1"
+            android:layout_gravity="center_vertical"
+            android:layout_row="2"
+            android:layout_rowSpan="2"
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:background="@android:drawable/ic_menu_edit" />
+
+        <Button
+            android:id="@+id/Divider1"
+            android:layout_width="match_parent"
+            android:layout_height="4dp"
+            android:layout_column="0"
+            android:layout_row="4"
+            android:layout_columnSpan="2"
+            android:background="?attr/dividerHorizontal"/>
+
+        <ImageView
+            android:id="@+id/ivUserProfile"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_column="0"
+            android:layout_row="5"
+            android:adjustViewBounds="true"
+            app:srcCompat="@drawable/common_google_signin_btn_icon_dark" />
+
+        <Button
+            android:id="@+id/Divider2"
+            android:layout_width="match_parent"
+            android:layout_height="4dp"
+            android:layout_column="0"
+            android:layout_row="6"
+            android:layout_columnSpan="2"
+            android:background="?attr/dividerHorizontal"/>
+
+        <Button
+            android:id="@+id/btnUpdateUserSettings"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_column="0"
+            android:layout_row="7"
+            android:text="Save settings" />
+
+        <Button
+            android:id="@+id/btnChooseImage"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_column="0"
+            android:layout_row="8"
+            android:text="Choose Image" />
+
+        <Button
+            android:id="@+id/btnUploadImage"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_column="0"
+            android:layout_row="9"
+            android:text="Upload Image" />
+
+        <Button
+            android:id="@+id/btnDownloadImage"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_column="0"
+            android:layout_row="10"
+            android:text="Download Image" />
+
+        <Button
+            android:id="@+id/btnLogout"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_column="0"
+            android:layout_row="11"
+            android:text="Logout" />
+
+    </GridLayout>
+
+</android.support.constraint.ConstraintLayout>

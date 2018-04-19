@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:showIn="navigation_view">
+
+    <item android:title="@string/navigation_drawer_submenu_general_title">
+        <menu>
+            <item
+                android:id="@+id/nav_allTasks"
+                android:icon="@drawable/ic_task_all"
+                android:title="@string/navigation_drawer_submenu_general_allTasks" />
+            <item
+                android:id="@+id/nav_favoriteTasks"
+                android:icon="@drawable/ic_task_favorite"
+                android:title="@string/navigation_drawer_submenu_general_favoriteTasks" />
+            <item
+                android:id="@+id/nav_slideshow"
+                android:icon="@drawable/ic_menu_slideshow"
+                android:title="SettingsTest" />
+            <item
+                android:id="@+id/nav_manage"
+                android:icon="@drawable/ic_menu_manage"
+                android:title="Settings" />
+
+        </menu>
+    </item>
+</menu>
