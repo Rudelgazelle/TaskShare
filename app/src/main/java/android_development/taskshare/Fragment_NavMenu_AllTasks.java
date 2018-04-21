@@ -21,6 +21,7 @@ import android.widget.SearchView;
 import android.widget.Toast;
 
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
@@ -52,6 +53,13 @@ public class Fragment_NavMenu_AllTasks extends Fragment {
     private String mParam2;
 
     private OnFragmentInteractionListener mListener;
+
+    //Initialize FirebaseAuth instance
+    public String userID;
+
+    public FirebaseAuth mAuth;
+    FirebaseUser currentUser = null;
+    FirebaseAuth.AuthStateListener authStateListener;
 
     //Initialize the recyclerView
     RecyclerView recyclerViewTaskData;
@@ -90,6 +98,41 @@ public class Fragment_NavMenu_AllTasks extends Fragment {
 
         //This enables the search menu function --> further implementation in "onPrepareOptionsMenu"
         setHasOptionsMenu(true);
+
+        /***********************************************************************************************
+         *
+         * Authstate listener will listen to changes in the user authorization state
+         *
+         **********************************************************************************************/
+        authStateListener = new FirebaseAuth.AuthStateListener() {
+            @Override
+            public void onAuthStateChanged(@NonNull FirebaseAuth firebaseAuth) {
+
+                currentUser = mAuth.getCurrentUser();
+
+                Log.d("User", "Fragment - User: " + currentUser);
+
+                if (currentUser != null) {
+                    //If authorization is positive, refresh userID
+                    userID = currentUser.getUid();
+
+                    //add the variable to SharedPreference
+                    saveSharedPreferences();
+/*                    // 1. Open Shared Preference File
+                    SharedPreferences mSharedPref = getContext().getSharedPreferences("mSharePrefFile", 0);
+                    // 2. Initialize Editor Class
+                    SharedPreferences.Editor editor = mSharedPref.edit();
+                    // 3. Get Values from fields and store in Shared Preferences
+                    editor.putString("userID", userID);
+                    // 5. Store the keys
+                    editor.commit();*/
+                }
+            }
+        };
+
+        //Initialize Firebase Authorization and activate AuthStateListener
+        mAuth = FirebaseAuth.getInstance();
+        mAuth.addAuthStateListener(authStateListener);
     }
 
     @Override
@@ -131,6 +174,8 @@ public class Fragment_NavMenu_AllTasks extends Fragment {
             Intent userLoginActivityIntent = new Intent(getContext(), UserLoginStartActivity.class);
             getContext().startActivity(userLoginActivityIntent);
         }*/
+        Log.d("User", "Fragment - User ID: " + userID);
+
 
         dbRef = dbRef.child("taskdata").child(userID);
         Query query = dbRef.orderByChild("datecreated");
@@ -263,6 +308,7 @@ public class Fragment_NavMenu_AllTasks extends Fragment {
         SharedPreferences.Editor editor = mSharedPref.edit();
         // 3. Get Values from fields and store in Shared Preferences
         editor.putInt("listSizeTasksAll", taskDataListItems.size()-1);
+        editor.putString("userID", userID);
         // 4. Store the keys
         editor.commit();
     }

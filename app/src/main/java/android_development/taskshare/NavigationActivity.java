@@ -120,17 +120,20 @@ public class NavigationActivity extends AppCompatActivity
 
                 currentUser = mAuth.getCurrentUser();
 
+                Log.d("User", "Activity - User: " + currentUser);
+
                 if (currentUser == null) {
-                    Toast.makeText(NavigationActivity.this, "User is logged out", Toast.LENGTH_LONG).show();
-                    Intent userLoginStartActivityIntent = new Intent(NavigationActivity.this, UserLoginStartActivity.class);
-                    NavigationActivity.this.startActivity(userLoginStartActivityIntent);
+                Toast.makeText(NavigationActivity.this, "User is logged out", Toast.LENGTH_LONG).show();
+                Intent userLoginStartActivityIntent = new Intent(NavigationActivity.this, UserLoginStartActivity.class);
+                NavigationActivity.this.startActivity(userLoginStartActivityIntent);
                 }
 
                 if (currentUser != null) {
                     //If authorization is positive, refresh userID
                     userID = currentUser.getUid();
+                    saveSharedPreferences();
 
-                    //add the variable to SharedPreference
+/*                    //add the variable to SharedPreference
                     // 1. Open Shared Preference File
                     SharedPreferences mSharedPref = getSharedPreferences("mSharePrefFile", 0);
                     // 2. Initialize Editor Class
@@ -138,17 +141,16 @@ public class NavigationActivity extends AppCompatActivity
                     // 3. Get Values from fields and store in Shared Preferences
                     editor.putString("userID", userID);
                     // 5. Store the keys
-                    editor.commit();
+                    editor.commit();*/
                 }
             }
         };
-
 
         //Initialize Firebase Authorization and activate AuthStateListener
         mAuth = FirebaseAuth.getInstance();
         mAuth.addAuthStateListener(authStateListener);
 
-        //Set default Fragment if no Saved Instance is
+        //Set default Fragment if no Saved Instance is null
         if (savedInstanceState == null) {
             Fragment_NavMenu_AllTasks fragment = new Fragment_NavMenu_AllTasks();
             FragmentTransaction fragmentTransaction = getSupportFragmentManager().beginTransaction();
@@ -519,8 +521,19 @@ public class NavigationActivity extends AppCompatActivity
         taskDataListAllSize = (mSharedPref.getInt("listSizeTasksAll", 0));
         taskDataListFavoriteSize = (mSharedPref.getInt("listSizeTasksFavorite", 0));
         taskDataListOverdueSize = (mSharedPref.getInt("listSizeTasksOverdue", 0));
-
-
     }
 
+    /***********************************************************************************************
+     * SAVE SHARED PREFERENCES TO FILE
+     **********************************************************************************************/
+    public void saveSharedPreferences(){
+        // 1. Open Shared Preference File
+        SharedPreferences mSharedPref = getSharedPreferences("mSharePrefFile", 0);
+        // 2. Initialize Editor Class
+        SharedPreferences.Editor editor = mSharedPref.edit();
+        // 3. Get Values from fields and store in Shared Preferences
+        editor.putString("userID", userID);
+        // 4. Store the keys
+        editor.commit();
+    }
 }
