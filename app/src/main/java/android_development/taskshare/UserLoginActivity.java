@@ -4,6 +4,7 @@ import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.annotation.TargetApi;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.support.annotation.NonNull;
 import android.support.design.widget.Snackbar;
@@ -67,11 +68,54 @@ public class UserLoginActivity extends AppCompatActivity implements LoaderCallba
     public FirebaseAuth mAuth;
     FirebaseUser currentUser;
 
+    String userID;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        //mAuth.signOut();
+
         setContentView(R.layout.activity_user_login);
         setupActionBar();
+
+/*        *//***********************************************************************************************
+         *
+         * Authstate listener will listen to changes in the user authorization state
+         *
+         **********************************************************************************************//*
+        FirebaseAuth.AuthStateListener authStateListener = new FirebaseAuth.AuthStateListener() {
+            @Override
+            public void onAuthStateChanged(@NonNull FirebaseAuth firebaseAuth) {
+
+                currentUser = mAuth.getCurrentUser();
+
+                if (currentUser != null){
+
+                    //If authorization is positive, refresh userID
+                    userID = currentUser.getUid();
+
+                    //add the variable to SharedPreference
+                    // 1. Open Shared Preference File
+                    SharedPreferences mSharedPref = getSharedPreferences("mSharePrefFile", 0);
+                    // 2. Initialize Editor Class
+                    SharedPreferences.Editor editor = mSharedPref.edit();
+                    // 3. Get Values from fields and store in Shared Preferences
+                    editor.putString("userID", userID);
+                    // 5. Store the keys
+                    editor.commit();
+
+                    //and Open Navigation activity
+                    Intent navigationActivityIntent = new Intent(UserLoginActivity.this, NavigationActivity.class);
+                    UserLoginActivity.this.startActivity(navigationActivityIntent);
+                }
+            }
+        };*/
+
+        //Initialize Firebase Authorization and activate AuthStateListener
+        //mAuth = FirebaseAuth.getInstance();
+        //mAuth.addAuthStateListener(authStateListener);
+
         // Set up the login form.
         mEmailView = (AutoCompleteTextView) findViewById(R.id.email);
         populateAutoComplete();
@@ -98,6 +142,7 @@ public class UserLoginActivity extends AppCompatActivity implements LoaderCallba
 
         mLoginFormView = findViewById(R.id.login_form);
         mProgressView = findViewById(R.id.login_progress);
+
     }
 
     private void populateAutoComplete() {
@@ -213,7 +258,7 @@ public class UserLoginActivity extends AppCompatActivity implements LoaderCallba
                         public void onComplete(@NonNull Task<AuthResult> task) {
                             if (task.isSuccessful()) {
                                 // Sign in success, open the Main Navigation activity with the users tasks
-                                Toast.makeText(UserLoginActivity.this, "Authentication successful.", Toast.LENGTH_SHORT).show();
+                                Toast.makeText(UserLoginActivity.this, "Authentication successful: Logged in as: " + mAuth.getCurrentUser().getEmail(), Toast.LENGTH_SHORT).show();
 
                                 Intent navigationActivityIntent = new Intent(UserLoginActivity.this, NavigationActivity.class);
                                 UserLoginActivity.this.startActivity(navigationActivityIntent);
@@ -228,6 +273,7 @@ public class UserLoginActivity extends AppCompatActivity implements LoaderCallba
                         }
                     });
             //--------------------------------------------------------------------------------------
+
 
         }
     }

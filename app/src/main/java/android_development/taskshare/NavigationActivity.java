@@ -60,7 +60,7 @@ public class NavigationActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener {
 
     //Initialize variables for Userdata
-    public String userID ="";
+    public String userID = "";
     public String userName;
     public String userMail;
     public Uri userProfilePhotoUrl;
@@ -101,7 +101,6 @@ public class NavigationActivity extends AppCompatActivity
     private Integer taskDataListOverdueSize;
 
 
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -109,7 +108,47 @@ public class NavigationActivity extends AppCompatActivity
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        //Set default Fragment if no Saved Instance is available
+
+        /***********************************************************************************************
+         *
+         * Authstate listener will listen to changes in the user authorization state
+         *
+         **********************************************************************************************/
+        authStateListener = new FirebaseAuth.AuthStateListener() {
+            @Override
+            public void onAuthStateChanged(@NonNull FirebaseAuth firebaseAuth) {
+
+                currentUser = mAuth.getCurrentUser();
+
+                if (currentUser == null) {
+                    Toast.makeText(NavigationActivity.this, "User is logged out", Toast.LENGTH_LONG).show();
+                    Intent userLoginStartActivityIntent = new Intent(NavigationActivity.this, UserLoginStartActivity.class);
+                    NavigationActivity.this.startActivity(userLoginStartActivityIntent);
+                }
+
+                if (currentUser != null) {
+                    //If authorization is positive, refresh userID
+                    userID = currentUser.getUid();
+
+                    //add the variable to SharedPreference
+                    // 1. Open Shared Preference File
+                    SharedPreferences mSharedPref = getSharedPreferences("mSharePrefFile", 0);
+                    // 2. Initialize Editor Class
+                    SharedPreferences.Editor editor = mSharedPref.edit();
+                    // 3. Get Values from fields and store in Shared Preferences
+                    editor.putString("userID", userID);
+                    // 5. Store the keys
+                    editor.commit();
+                }
+            }
+        };
+
+
+        //Initialize Firebase Authorization and activate AuthStateListener
+        mAuth = FirebaseAuth.getInstance();
+        mAuth.addAuthStateListener(authStateListener);
+
+        //Set default Fragment if no Saved Instance is
         if (savedInstanceState == null) {
             Fragment_NavMenu_AllTasks fragment = new Fragment_NavMenu_AllTasks();
             FragmentTransaction fragmentTransaction = getSupportFragmentManager().beginTransaction();
@@ -303,41 +342,7 @@ public class NavigationActivity extends AppCompatActivity
             }
         });
 
-        /***********************************************************************************************
-         *
-         * Authstate listener will listen to changes in the user authorization state
-         *
-         **********************************************************************************************/
-        authStateListener = new FirebaseAuth.AuthStateListener() {
-            @Override
-            public void onAuthStateChanged(@NonNull FirebaseAuth firebaseAuth) {
 
-                currentUser = mAuth.getCurrentUser();
-
-                if (currentUser == null){
-                    Toast.makeText(NavigationActivity.this, "User is logged out", Toast.LENGTH_LONG).show();
-                    Intent userLoginActivityIntent = new Intent(NavigationActivity.this, UserLoginStartActivity.class);
-                    NavigationActivity.this.startActivity(userLoginActivityIntent);
-                }
-
-                //If authorization is positive, refresh userID
-                userID = currentUser.getUid();
-
-                //add the variable to SharedPreference
-                // 1. Open Shared Preference File
-                SharedPreferences mSharedPref = getSharedPreferences("mSharePrefFile", 0);
-                // 2. Initialize Editor Class
-                SharedPreferences.Editor editor = mSharedPref.edit();
-                // 3. Get Values from fields and store in Shared Preferences
-                editor.putString("userID", userID);
-                // 5. Store the keys
-                editor.commit();
-            }
-        };
-
-        //Initialize Firebase Authorization and activate AuthStateListener
-        mAuth = FirebaseAuth.getInstance();
-        mAuth.addAuthStateListener(authStateListener);
 
         /***********************************************************************************************
          * Method to update the user profile UI in the Drawer Menu

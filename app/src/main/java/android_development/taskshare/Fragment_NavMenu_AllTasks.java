@@ -127,6 +127,11 @@ public class Fragment_NavMenu_AllTasks extends Fragment {
         // 2. ID Reference from SharePrefFile to fields (If id does not exist, the default value will be loaded)
         String userID = (mSharedPref.getString("userID", null));
 
+        /*if (userID == null){
+            Intent userLoginActivityIntent = new Intent(getContext(), UserLoginStartActivity.class);
+            getContext().startActivity(userLoginActivityIntent);
+        }*/
+
         dbRef = dbRef.child("taskdata").child(userID);
         Query query = dbRef.orderByChild("datecreated");
 
