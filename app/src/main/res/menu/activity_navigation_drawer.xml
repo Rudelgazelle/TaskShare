@@ -3,10 +3,11 @@
     xmlns:tools="http://schemas.android.com/tools"
     tools:showIn="navigation_view">
 
-    <group android:id="@+id/groupTasks"
+    <item android:title="@string/navigation_drawer_submenuheader_general_title"
+        android:id="@+id/submenu_tasks"
         android:orderInCategory="0">
-        <item android:title="@string/navigation_drawer_submenuheader_general_title">
-            <menu>
+        <menu>
+            <group android:id="@+id/tasks">
                 <item
                     android:id="@+id/nav_allTasks"
                     android:icon="@drawable/ic_task_all"
@@ -19,22 +20,37 @@
                     android:id="@+id/nav_overdueTasks"
                     android:icon="@drawable/ic_menu_tasks_overdue"
                     android:title="@string/navigation_drawer_submenu_general_overdueTasks" />
-            </menu>
-        </item>
-    </group>
+            </group>
+        </menu>
+    </item>
 
-    <group android:id="@+id/groupSettings"
-        android:orderInCategory="3">
+    <item android:title="@string/navigation_drawer_submenu_group_title"
+        android:id="@+id/submenu_groups"
+        android:orderInCategory="0">
+        <menu>
+            <group android:id="@+id/groups">
+                <item
+                    android:id="@+id/nav_addGroup"
+                    android:icon="@drawable/ic_menu_group_add"
+                    android:title="@string/navigation_drawer_submenu_group_addGroup"
+                    android:orderInCategory="1"/>
+            </group>
+        </menu>
+    </item>
+
+    <group android:orderInCategory="3">
         <item android:title="@string/navigation_drawer_menu_header_settings">
             <menu>
-                <item
-                    android:id="@+id/nav_settings"
-                    android:icon="@drawable/ic_menu_settings"
-                    android:title="@string/navigation_drawer_menu_item_settings" />
-                <item
-                    android:id="@+id/nav_slideshow"
-                    android:icon="@drawable/ic_menu_slideshow"
-                    android:title="SettingsTest" />
+                <group android:id="@+id/groupSettings">
+                    <item
+                        android:id="@+id/nav_settings"
+                        android:icon="@drawable/ic_menu_settings"
+                        android:title="@string/navigation_drawer_menu_item_settings" />
+                    <item
+                        android:id="@+id/nav_slideshow"
+                        android:icon="@drawable/ic_menu_slideshow"
+                        android:title="SettingsTest" />
+                </group>
             </menu>
         </item>
     </group>

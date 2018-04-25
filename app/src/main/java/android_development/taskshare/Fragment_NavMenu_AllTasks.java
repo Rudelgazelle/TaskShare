@@ -6,6 +6,7 @@ import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -22,6 +23,7 @@ import android.widget.Toast;
 
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
@@ -54,12 +56,8 @@ public class Fragment_NavMenu_AllTasks extends Fragment {
 
     private OnFragmentInteractionListener mListener;
 
-    //Initialize FirebaseAuth instance
-    public String userID;
-
-    public FirebaseAuth mAuth;
-    FirebaseUser currentUser = null;
-    FirebaseAuth.AuthStateListener authStateListener;
+    //Firebase current user variable
+    String userID;
 
     //Initialize the recyclerView
     RecyclerView recyclerViewTaskData;
@@ -78,6 +76,7 @@ public class Fragment_NavMenu_AllTasks extends Fragment {
      * @param param2 Parameter 2.
      * @return A new instance of fragment Fragment_NavMenu_AllTasks.
      */
+
     // TODO: Rename and change types and number of parameters
     public static Fragment_NavMenu_AllTasks newInstance(String param1, String param2) {
         Fragment_NavMenu_AllTasks fragment = new Fragment_NavMenu_AllTasks();
@@ -95,52 +94,18 @@ public class Fragment_NavMenu_AllTasks extends Fragment {
             mParam1 = getArguments().getString(ARG_PARAM1);
             mParam2 = getArguments().getString(ARG_PARAM2);
         }
-
-        //This enables the search menu function --> further implementation in "onPrepareOptionsMenu"
-        setHasOptionsMenu(true);
-
-        /***********************************************************************************************
-         *
-         * Authstate listener will listen to changes in the user authorization state
-         *
-         **********************************************************************************************/
-        authStateListener = new FirebaseAuth.AuthStateListener() {
-            @Override
-            public void onAuthStateChanged(@NonNull FirebaseAuth firebaseAuth) {
-
-                currentUser = mAuth.getCurrentUser();
-
-                Log.d("User", "Fragment - User: " + currentUser);
-
-                if (currentUser != null) {
-                    //If authorization is positive, refresh userID
-                    userID = currentUser.getUid();
-
-                    //add the variable to SharedPreference
-                    saveSharedPreferences();
-/*                    // 1. Open Shared Preference File
-                    SharedPreferences mSharedPref = getContext().getSharedPreferences("mSharePrefFile", 0);
-                    // 2. Initialize Editor Class
-                    SharedPreferences.Editor editor = mSharedPref.edit();
-                    // 3. Get Values from fields and store in Shared Preferences
-                    editor.putString("userID", userID);
-                    // 5. Store the keys
-                    editor.commit();*/
-                }
-            }
-        };
-
-        //Initialize Firebase Authorization and activate AuthStateListener
-        mAuth = FirebaseAuth.getInstance();
-        mAuth.addAuthStateListener(authStateListener);
     }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
 
+        //This enables the search menu function --> further implementation in "onPrepareOptionsMenu"
+        setHasOptionsMenu(true);
+
         //Define the view object
         View view = inflater.inflate(R.layout.fragment__nav_menu__all_tasks, container, false);
+
         //Initiate the RecyclerView object //map the Recyclerview object to the xml RecyclerView
         recyclerViewTaskData = (RecyclerView) view.findViewById(R.id.recyclerViewTaskData);
 
@@ -154,33 +119,59 @@ public class Fragment_NavMenu_AllTasks extends Fragment {
 
         // Create a new instance of a ArrayList; Initialize the above defined listitem object
         taskDataListItems = new ArrayList<>();
-        // Instanciate a new adapter for the Recycleview and parse the "listitem" and "Context"
-        adapter = new TaskDataViewAdapter(taskDataListItems, getContext());
-        //set the adapter to the recyclerview
-        recyclerViewTaskData.setAdapter(adapter);
 
         // set the database reference to the correct child object (TaskData)
         //Initialize Firebase objects
         FirebaseDatabase database = FirebaseHelper.getDatabase();
         DatabaseReference dbRef = database.getReference();
 
-        // 1. Open Shared Preference File
-        SharedPreferences mSharedPref = getContext().getSharedPreferences("mSharePrefFile", 0);
+        //Retrieve userID from NavigationActivity
+        retrieveUserID();
 
-        // 2. ID Reference from SharePrefFile to fields (If id does not exist, the default value will be loaded)
-        String userID = (mSharedPref.getString("userID", null));
+        Log.d("User", "ActivUser-loaded in Fragment: " + userID);
 
-        /*if (userID == null){
-            Intent userLoginActivityIntent = new Intent(getContext(), UserLoginStartActivity.class);
-            getContext().startActivity(userLoginActivityIntent);
-        }*/
-        Log.d("User", "Fragment - User ID: " + userID);
-
+        // Instanciate a new adapter for the Recycleview and parse the "listitem" and "Context"
+        adapter = new TaskDataViewAdapter(taskDataListItems, getContext());
+        //set the adapter to the recyclerview
+        recyclerViewTaskData.setAdapter(adapter);
 
         dbRef = dbRef.child("taskdata").child(userID);
         Query query = dbRef.orderByChild("datecreated");
 
-        //set a ValueEventlistener to the database reference that listens if changes are being made to the data
+        query.addChildEventListener(new ChildEventListener() {
+            @Override
+            public void onChildAdded(DataSnapshot dataSnapshot, String s) {
+
+                //retrieve data as a TaskData object
+                TaskData taskData = dataSnapshot.getValue(TaskData.class);
+                //add the retrived object to Arraylist
+                taskDataListItems.add(taskData);
+                // notify the adapter that data has been changed and needs to be refreshed
+                adapter.notifyDataSetChanged();
+            }
+
+            @Override
+            public void onChildChanged(DataSnapshot dataSnapshot, String s) {
+
+            }
+
+            @Override
+            public void onChildRemoved(DataSnapshot dataSnapshot) {
+
+            }
+
+            @Override
+            public void onChildMoved(DataSnapshot dataSnapshot, String s) {
+
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+
+            }
+        });
+
+        /*//set a ValueEventlistener to the database reference that listens if changes are being made to the data
         query.addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
@@ -200,18 +191,23 @@ public class Fragment_NavMenu_AllTasks extends Fragment {
                     taskDataListItems.add(taskData);
                 }
 
+                // Instanciate a new adapter for the Recycleview and parse the "listitem" and "Context"
+                adapter = new TaskDataViewAdapter(taskDataListItems, getContext());
+                //set the adapter to the recyclerview
+                recyclerViewTaskData.setAdapter(adapter);
                 // notify the adapter that data has been changed and needs to be refreshed
                 adapter.notifyDataSetChanged();
 
-                //save Sharred preferences (Listsize)
-                saveSharedPreferences();
+                //save Shared preferences (Listsize)
+                int listSize = taskDataListItems.size();
+                saveSharedPreferences(listSize);
             }
 
             @Override
             public void onCancelled(DatabaseError databaseError) {
 
             }
-        });
+        });*/
 
         // Inflate the layout for this fragment
         return view;
@@ -301,15 +297,40 @@ public class Fragment_NavMenu_AllTasks extends Fragment {
     /***********************************************************************************************
      * SAVE SHARED PREFERENCES TO FILE
      **********************************************************************************************/
-    public void saveSharedPreferences(){
+    public void saveSharedPreferences(int mListSize){
         // 1. Open Shared Preference File
         SharedPreferences mSharedPref = getContext().getSharedPreferences("mSharePrefFile", 0);
         // 2. Initialize Editor Class
         SharedPreferences.Editor editor = mSharedPref.edit();
         // 3. Get Values from fields and store in Shared Preferences
-        editor.putInt("listSizeTasksAll", taskDataListItems.size()-1);
+        editor.putInt("listSizeTasksAll", mListSize);
+        // 4. Store the keys
+        editor.commit();
+    }
+
+
+
+    /***********************************************************************************************
+     * SAVE SHARED PREFERENCES TO FILE
+     **********************************************************************************************/
+    public void saveShareUserPreferences(String userID){
+        // 1. Open Shared Preference File
+        SharedPreferences mSharedPref = getContext().getSharedPreferences("mSharePrefFile", 0);
+        // 2. Initialize Editor Class
+        SharedPreferences.Editor editor = mSharedPref.edit();
+        // 3. Get Values from fields and store in Shared Preferences
         editor.putString("userID", userID);
         // 4. Store the keys
         editor.commit();
     }
+
+    public void retrieveUserID(){
+
+        NavigationActivity navigationActivity;
+        navigationActivity = (NavigationActivity) getActivity();
+
+        //attach public variable to local variable
+        userID = navigationActivity.userID;
+    }
+
 }

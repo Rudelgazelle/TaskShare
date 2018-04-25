@@ -16,6 +16,7 @@
     <string name="navigation_drawer_submenu_general_favoriteTasks">Favorite</string>
     <string name="navigation_drawer_submenu_general_overdueTasks">Overdue</string>
     <string name="navigation_drawer_submenu_group_title">Groups (shared tasks)</string>
+    <string name="navigation_drawer_submenu_group_addGroup">Create new group...</string>
     <string name="navigation_drawer_menu_header_settings">Settings</string>
     <string name="navigation_drawer_menu_item_settings">Settings</string>
 
@@ -55,6 +56,11 @@
     <string name="dummy_task_key">dummy_data_key</string>
     <string name="title_activity_settings">Settings</string>
     <string name="title_activity_settings2">Settings</string>
+
+    <!-- Strings related to AddGroup activity -->
+    <string name="textview_groupName_text">Group name:</string>
+    <string name="textview_groupName_hint">type in a group name...</string>
+    <string name="button_addMember_text">Add member...</string>
 
     <!-- Strings related to Settings -->
     <string name="settings_header_DueDateFunction">Due date functions</string>
@@ -137,5 +143,7 @@
     <string name="nav_header_title">Android Studio</string>
     <string name="nav_header_subtitle">android.studio@android.com</string>
     <string name="nav_header_desc">Navigation header</string>
+    <string name="title_activity_add_group">Add Group...</string>
+    <string name="title_activity_group_details">GroupDetailsActivity</string>
 
 </resources>

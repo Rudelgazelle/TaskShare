@@ -1,25 +1,13 @@
 package android_development.taskshare;
 
-import android.app.ProgressDialog;
-import android.content.ComponentName;
-import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.FragmentTransaction;
-import android.support.v4.widget.SwipeRefreshLayout;
-import android.support.v7.view.menu.SubMenuBuilder;
-import android.support.v7.widget.LinearLayoutManager;
-import android.support.v7.widget.RecyclerView;
-import android.util.AttributeSet;
 import android.util.Log;
-import android.view.KeyEvent;
-import android.view.LayoutInflater;
 import android.view.SubMenu;
 import android.view.View;
 import android.support.design.widget.NavigationView;
@@ -30,16 +18,14 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.ViewGroup;
-import android.view.Window;
 import android.widget.Button;
 import android.widget.ImageView;
-import android.widget.SearchView;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import com.bumptech.glide.Glide;
 import com.firebase.ui.storage.images.FirebaseImageLoader;
+import com.google.firebase.FirebaseApp;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.ChildEventListener;
@@ -48,13 +34,14 @@ import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.Query;
-import com.google.firebase.database.ValueEventListener;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
-import java.util.UUID;
+import java.util.Map;
+
 
 public class NavigationActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener {
@@ -64,6 +51,8 @@ public class NavigationActivity extends AppCompatActivity
     public String userName;
     public String userMail;
     public Uri userProfilePhotoUrl;
+    public Long userHashCode; //to be used for generation of unique IDs
+
 
     //Initialize Objects for User data in NavHeader
     public ImageView ivUserProfile;
@@ -73,8 +62,9 @@ public class NavigationActivity extends AppCompatActivity
 
     //Initialize FirebaseAuth instance
     public FirebaseAuth mAuth;
-    FirebaseUser currentUser = null;
-    FirebaseAuth.AuthStateListener authStateListener;
+    public FirebaseUser currentUser = null;
+    public FirebaseAuth.AuthStateListener mAuthstateListener;
+    public FirebaseAuth.AuthStateListener authStateListener;
 
     //Define TAG variable for output messages during debug
     private static final String TAG = "EmailPassword";
@@ -86,6 +76,8 @@ public class NavigationActivity extends AppCompatActivity
     // adding a section and items into menu
     Menu menu;
     SubMenu subMenuGroups;
+    MenuItem menuItem;
+
     int groupID;
     int itemID;
     int itemOrder = 0;
@@ -95,11 +87,12 @@ public class NavigationActivity extends AppCompatActivity
     int itemToBeRemovedIndex;
 
     //VARIABLES FOR MENU GROUP ITEMS
+    public Map<String, GroupData> groupHashMap = new HashMap<String, GroupData>();
+    public Map<String, MemberData> memberHashMap = new HashMap<String, MemberData>();
     private List<GroupData> menuGroupItemList;
     private Integer taskDataListAllSize;
     private Integer taskDataListFavoriteSize;
     private Integer taskDataListOverdueSize;
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -108,47 +101,38 @@ public class NavigationActivity extends AppCompatActivity
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-
         /***********************************************************************************************
          *
          * Authstate listener will listen to changes in the user authorization state
          *
          **********************************************************************************************/
-        authStateListener = new FirebaseAuth.AuthStateListener() {
+        mAuthstateListener = new FirebaseAuth.AuthStateListener() {
             @Override
             public void onAuthStateChanged(@NonNull FirebaseAuth firebaseAuth) {
 
-                currentUser = mAuth.getCurrentUser();
+                FirebaseUser mCurrentUser = firebaseAuth.getCurrentUser();
 
-                Log.d("User", "Activity - User: " + currentUser);
-
-                if (currentUser == null) {
-                Toast.makeText(NavigationActivity.this, "User is logged out", Toast.LENGTH_LONG).show();
-                Intent userLoginStartActivityIntent = new Intent(NavigationActivity.this, UserLoginStartActivity.class);
-                NavigationActivity.this.startActivity(userLoginStartActivityIntent);
+                if (mCurrentUser == null) {
+                    Toast.makeText(NavigationActivity.this, "User is logged out", Toast.LENGTH_LONG).show();
+                    Intent userLoginStartActivityIntent = new Intent(NavigationActivity.this, UserLoginStartActivity.class);
+                    NavigationActivity.this.startActivity(userLoginStartActivityIntent);
                 }
 
-                if (currentUser != null) {
+                if (mCurrentUser != null) {
                     //If authorization is positive, refresh userID
-                    userID = currentUser.getUid();
-                    saveSharedPreferences();
+                    String mUserID = mCurrentUser.getUid();
+                    Long mUserHashCode = Long.valueOf(mCurrentUser.hashCode());
 
-/*                    //add the variable to SharedPreference
-                    // 1. Open Shared Preference File
-                    SharedPreferences mSharedPref = getSharedPreferences("mSharePrefFile", 0);
-                    // 2. Initialize Editor Class
-                    SharedPreferences.Editor editor = mSharedPref.edit();
-                    // 3. Get Values from fields and store in Shared Preferences
-                    editor.putString("userID", userID);
-                    // 5. Store the keys
-                    editor.commit();*/
+                    saveSharedPreferences(mUserID, mUserHashCode);
+
+                    Log.d("User1", "ActivUser: " + mUserID);
+                    Log.d("User2", "ActivUserHash: " + mUserHashCode);
                 }
             }
         };
 
-        //Initialize Firebase Authorization and activate AuthStateListener
         mAuth = FirebaseAuth.getInstance();
-        mAuth.addAuthStateListener(authStateListener);
+        mAuth.addAuthStateListener(mAuthstateListener);
 
         //Set default Fragment if no Saved Instance is null
         if (savedInstanceState == null) {
@@ -171,7 +155,7 @@ public class NavigationActivity extends AppCompatActivity
                 super.onDrawerOpened(drawerView);
 
                 //load shared preference, to get the updated variable of listsize
-                loadSharedPreferences();
+                loadSharedPreferencesListSizes();
 
                 //set a new title with the list size of each Menu item at the end
                 String mNewTitleAll = getResources().getString(R.string.navigation_drawer_submenu_general_allTasks) + " (" +taskDataListAllSize.toString()+")";
@@ -232,37 +216,83 @@ public class NavigationActivity extends AppCompatActivity
          **********************************************************************************************/
 
         //Create Submenu for groups in the navDrawer
-        subMenuGroups = menu.addSubMenu(R.string.navigation_drawer_submenu_group_title);
+        //set groupid to the Group for GroupTasks defined in "activity_navigation_drawer"
+        groupID = R.id.groups;
+        //set the order to NONE
+        itemOrder = Menu.NONE;
 
         // Create a new instance of a ArrayList; Initialize the above defined listitem object
         menuGroupItemList = new ArrayList<>();
+
         // set the database reference to the correct child object (TaskData)
         //TODO: CHANGE THE HARD CODED GROUP CODE TO SOMETHING ELSE
-        DatabaseReference dbRefGroup = dbRef.child("group");
+        DatabaseReference dbRefGroup = dbRef.child("groupdata");
+        //DatabaseReference dbRefGroup = dbRef.child("group");
         Query query = dbRefGroup;
 
-        //set a ValueEventlistener to the database reference that listens if changes are being made to the data
         query.addChildEventListener(new ChildEventListener() {
             @Override
             public void onChildAdded(DataSnapshot dataSnapshot, String s) {
 
+                //retrieve data as a Groupdata object
                 GroupData groupData = dataSnapshot.getValue(GroupData.class);
-                //add the retrieved data to the ArrayList
+                //add the retrived object to Arraylist
                 menuGroupItemList.add(groupData);
+
                 //set groupid to the Group for GroupTasks defined in "activity_navigation_drawer"
-                //groupID = R.id.groupGroupTasks;
+                groupID = R.id.groups;
                 //generate Item identifier and set as ItemID
-                itemID = View.generateViewId();
+
+                //TODO: TEST OF NEW VIEW ID IN OBJECT
+                itemID = groupData.getItemId();
+                //itemID = View.generateViewId();
                 //set the order to NONE
                 itemOrder = Menu.NONE;
                 //set variables for submenu item
                 itemTitle = groupData.getName();
-                //add submenu item with the specified variables
-                subMenuGroups.add(groupID, itemID, itemOrder, itemTitle).setIcon(R.drawable.ic_menu_share);
+
+
+                //Add menu items under the "Groups" Submenu and add a menuitemclicklistener
+                menuItem = menu.findItem(R.id.submenu_groups).getSubMenu().add(groupID, itemID, itemOrder, itemTitle).setIcon(R.drawable.ic_menu_share)
+                        .setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
+                    @Override
+                    public boolean onMenuItemClick(MenuItem itemClicked) {
+
+                        //get the item ID of the clicked menu item
+                        int mItemIdPicked = itemClicked.getItemId();
+                        Log.d("Menu1", "The ID of the clicked item is: " + mItemIdPicked);
+
+                        // iterate throug the Arraylist and search for an entry with the specific itemID as value of itemID field
+                        for (GroupData groupData : menuGroupItemList) {
+                            int itemID = groupData.getItemId();
+                            //Log.d("Menu", "mID: " + groupData.getId());
+
+                            if (mItemIdPicked == itemID){
+                                Log.d("Menu2", "The ID of the group is: " + itemID);
+                            }
+                        }
+
+                        //Put the Activity title based on the Group name listed in the menus item title
+                        activityTitle = itemClicked.getTitle().toString();
+                        //Set the title of the activity
+                        getSupportActionBar().setTitle(activityTitle);
+
+                        //Open Fragment and parse the required itemID for the query of groups
+                        Fragment_NavMenu_GroupTasks fragment = new Fragment_NavMenu_GroupTasks();
+                        FragmentTransaction fragmentTransaction = getSupportFragmentManager().beginTransaction();
+                        fragmentTransaction.add(R.id.content_main_navigation, fragment);
+                        fragmentTransaction.commit();
+
+                        //TODO: PUTEXTRA METHOD WITH PARSING THE GroupID to be used in the opened GroupActivity
+
+                        return false;
+                    }
+                });
             }
 
             @Override
             public void onChildChanged(DataSnapshot dataSnapshot, String s) {
+
                 //Log.d("Index", "Index: " + dataSnapshot.getKey());
                 index = 0;
                 String snapShotKey = dataSnapshot.getKey();
@@ -271,7 +301,6 @@ public class NavigationActivity extends AppCompatActivity
 
                 for (GroupData groupData : menuGroupItemList) {
                     String mId = groupData.getId();
-                    //String mId = "xxxx";
                     Log.d("Menu", "mID: " + groupData.getId());
 
                     if (mId.equals(snapShotKey)){
@@ -300,10 +329,10 @@ public class NavigationActivity extends AppCompatActivity
                 for (GroupData groupData : menuGroupItemList) {
 
                     //get the Item ID of the iterated item in the arraylist
-                    String arrayItemID = groupData.getId();
+                    String arrayItemKey = groupData.getId();
 
                     //If a match of Snapshot ID and ArrayItemID has been found...
-                    if (arrayItemID.equals(snapShotKey)){
+                    if (arrayItemKey.equals(snapShotKey)){
                         //...set the index of the item that should be removed
                         itemToBeRemovedIndex = index;
                         Log.d("Menu", "The index of the Item to be removed is " + itemToBeRemovedIndex);
@@ -315,8 +344,16 @@ public class NavigationActivity extends AppCompatActivity
 
                 //remove the respective item from the existing index of the ArrayList
                 menuGroupItemList.remove(itemToBeRemovedIndex);
+
+                //-----------------------------
                 //remove the item from the menu
-                itemID = subMenuGroups.getItem(itemToBeRemovedIndex).getItemId();
+                //-----------------------------
+
+                //get the submenu where the item is in
+                subMenuGroups = menu.findItem(R.id.submenu_groups).getSubMenu();
+                //get the itemID of the item with the specific index value
+                int itemID = subMenuGroups.getItem(itemToBeRemovedIndex).getItemId();
+                //delete the item from menu
                 subMenuGroups.removeItem(itemID);
             }
 
@@ -414,6 +451,11 @@ public class NavigationActivity extends AppCompatActivity
                 //initialize fragment
                 fragment = new Fragment_NavMenu_OverdueTasks();
                 break;
+            case R.id.nav_addGroup:
+                // open settings activity
+                Intent addGroupActivityIntent = new Intent(NavigationActivity.this, AddGroup.class);
+                NavigationActivity.this.startActivity(addGroupActivityIntent);
+                break;
             case R.id.nav_settings:
                 // open settings activity
                 Intent settingsActivityIntent = new Intent(NavigationActivity.this, SettingsActivity.class);
@@ -424,15 +466,6 @@ public class NavigationActivity extends AppCompatActivity
                 Intent settingsTestActivityIntent = new Intent(NavigationActivity.this, SettingsActivity2.class);
                 NavigationActivity.this.startActivity(settingsTestActivityIntent);
                 break;
-            /*case idVariable2:
-                //do stuff
-                break;
-            case idVariable3:
-                //do stuff
-                break;
-            case idVariable4:
-                //do stuff
-                break;*/
         }
 
         if (fragment != null){
@@ -446,8 +479,6 @@ public class NavigationActivity extends AppCompatActivity
 
             //Set the title of the activity
             getSupportActionBar().setTitle(activityTitle);
-            // change icon to arrow drawable
-            //getSupportActionBar().setHomeAsUpIndicator(R.drawable.ic_action_done);
         }
 
         //the navigation drawer will be closed after selecting an item
@@ -459,13 +490,15 @@ public class NavigationActivity extends AppCompatActivity
     protected void onStart() {
         super.onStart();
         // Check if user is signed in (non-null) and update UI accordingly.
-        mAuth.addAuthStateListener(authStateListener);
+        mAuth.addAuthStateListener(mAuthstateListener);
     }
 
     @Override
     protected void onStop() {
         super.onStop();
-        mAuth.removeAuthStateListener(authStateListener);
+        if (mAuthstateListener != null){
+        mAuth.removeAuthStateListener(mAuthstateListener);
+        }
     }
 
     //----------------------------------------------------------------------------------------------
@@ -513,7 +546,7 @@ public class NavigationActivity extends AppCompatActivity
     /***********************************************************************************************
      * LOAD SHARED PREFERENCES FROM FILE
      **********************************************************************************************/
-    public void loadSharedPreferences(){
+    public void loadSharedPreferencesListSizes(){
 
         // 1. Open Shared Preference File
         SharedPreferences mSharedPref = getSharedPreferences("mSharePrefFile", 0);
@@ -526,14 +559,18 @@ public class NavigationActivity extends AppCompatActivity
     /***********************************************************************************************
      * SAVE SHARED PREFERENCES TO FILE
      **********************************************************************************************/
-    public void saveSharedPreferences(){
+    public void saveSharedPreferences(String userID, Long userHashCode){
         // 1. Open Shared Preference File
         SharedPreferences mSharedPref = getSharedPreferences("mSharePrefFile", 0);
         // 2. Initialize Editor Class
         SharedPreferences.Editor editor = mSharedPref.edit();
         // 3. Get Values from fields and store in Shared Preferences
         editor.putString("userID", userID);
+        editor.putLong("userHashCode", userHashCode);
         // 4. Store the keys
         editor.commit();
+
+        Log.d("User3", "ActivUser-Stored: " + userID);
+        Log.d("User4", "ActivUserHash-stored: " + userHashCode);
     }
 }

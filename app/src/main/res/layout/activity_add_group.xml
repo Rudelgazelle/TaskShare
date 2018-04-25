@@ -4,26 +4,22 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context="android_development.taskshare.AddTaskActivity">
+    tools:context=".AddGroup">
 
     <android.support.design.widget.AppBarLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:theme="@style/AppTheme.AppBarOverlay"
-        android:orientation="vertical">
+        android:theme="@style/AppTheme.AppBarOverlay">
 
         <android.support.v7.widget.Toolbar
             android:id="@+id/toolbar"
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
             android:background="?attr/colorPrimary"
-            android:gravity="center_horizontal"
-            android:saveEnabled="false"
-            app:popupTheme="@style/AppTheme.PopupOverlay"
-            app:title="add Task..">
+            app:popupTheme="@style/AppTheme.PopupOverlay">
 
             <ImageButton
-                android:id="@+id/ibtnSaveData"
+                android:id="@+id/ibtnSave"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="right"
@@ -34,9 +30,11 @@
 
         </android.support.v7.widget.Toolbar>
 
+
+
     </android.support.design.widget.AppBarLayout>
 
-    <include layout="@layout/content_add_task" />
+    <include layout="@layout/content_add_group" />
 
     <android.support.design.widget.FloatingActionButton
         android:id="@+id/fab"
@@ -44,7 +42,6 @@
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|end"
         android:layout_margin="@dimen/fab_margin"
-        app:backgroundTint="?attr/colorButtonNormal"
-        app:srcCompat="@drawable/ic_star_border" />
+        app:srcCompat="@android:drawable/ic_dialog_email" />
 
 </android.support.design.widget.CoordinatorLayout>

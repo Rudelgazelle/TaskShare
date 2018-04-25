@@ -53,6 +53,9 @@ public class Fragment_NavMenu_OverdueTasks extends Fragment {
     TaskDataViewAdapter adapter;
     List<TaskData> taskDataListItems;
 
+    //Firebase User ID of current User
+    String userID;
+
     //Date field for comparison of DueDate and today
     Date mDateToday = null;
 
@@ -130,11 +133,8 @@ public class Fragment_NavMenu_OverdueTasks extends Fragment {
         FirebaseDatabase database = FirebaseHelper.getDatabase();
         DatabaseReference dbRef = database.getReference();
 
-        // 1. Open Shared Preference File
-        SharedPreferences mSharedPref = getContext().getSharedPreferences("mSharePrefFile", 0);
-
-        // 2. ID Reference from SharePrefFile to fields (If id does not exist, the default value will be loaded)
-        String userID = (mSharedPref.getString("userID", null));
+        //retrieve UserId of current logged in User
+        retrieveUserID();
 
         dbRef = dbRef.child("taskdata").child(userID);
         Query query = dbRef.orderByChild("datecreated");
@@ -143,8 +143,6 @@ public class Fragment_NavMenu_OverdueTasks extends Fragment {
         query.addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
-
-
 
                 //delete all items from the list
                 taskDataListItems.clear(); //TODO: implement funtion that only single dataset is changed if necessary
@@ -174,8 +172,9 @@ public class Fragment_NavMenu_OverdueTasks extends Fragment {
                 // notify the adapter that data has been changed and needs to be refreshed
                 adapter.notifyDataSetChanged();
 
-                //save Sharred preferences (Listsize)
-                saveSharedPreferences();
+                //save Shared preferences (Listsize)
+                int mListSize = taskDataListItems.size();
+                saveSharedPreferencesListSize(mListSize);
             }
 
             @Override
@@ -271,14 +270,23 @@ public class Fragment_NavMenu_OverdueTasks extends Fragment {
     /***********************************************************************************************
      * SAVE SHARED PREFERENCES TO FILE
      **********************************************************************************************/
-    public void saveSharedPreferences(){
+    public void saveSharedPreferencesListSize(int mListSize){
         // 1. Open Shared Preference File
         SharedPreferences mSharedPref = getContext().getSharedPreferences("mSharePrefFile", 0);
         // 2. Initialize Editor Class
         SharedPreferences.Editor editor = mSharedPref.edit();
         // 3. Get Values from fields and store in Shared Preferences
-        editor.putInt("listSizeTasksOverdue", taskDataListItems.size()-1);
+        editor.putInt("listSizeTasksOverdue", mListSize);
         // 4. Store the keys
         editor.commit();
+    }
+
+    public void retrieveUserID(){
+
+        NavigationActivity navigationActivity;
+        navigationActivity = (NavigationActivity) getActivity();
+
+        //attach public variable to local variable
+        userID = navigationActivity.userID;
     }
 }

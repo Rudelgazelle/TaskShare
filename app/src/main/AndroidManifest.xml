@@ -96,6 +96,24 @@
                 android:name="android.support.PARENT_ACTIVITY"
                 android:value="android_development.taskshare.NavigationActivity" />
         </activity>
+        <activity
+            android:name=".AddGroup"
+            android:label="@string/title_activity_add_group"
+            android:parentActivityName=".NavigationActivity"
+            android:theme="@style/AppTheme.NoActionBar">
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="android_development.taskshare.NavigationActivity" />
+        </activity>
+        <activity
+            android:name=".GroupDetailsActivity"
+            android:label="@string/title_activity_group_details"
+            android:parentActivityName=".NavigationActivity"
+            android:theme="@style/AppTheme.NoActionBar">
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="android_development.taskshare.NavigationActivity" />
+        </activity>
     </application>
 
 </manifest>

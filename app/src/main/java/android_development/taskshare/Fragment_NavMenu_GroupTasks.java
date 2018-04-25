@@ -16,8 +16,8 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.SearchView;
 
-
-import com.google.android.gms.tasks.Task;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
@@ -32,72 +32,37 @@ import java.util.List;
 /**
  * A simple {@link Fragment} subclass.
  * Activities that contain this fragment must implement the
- * {@link Fragment_NavMenu_FavoriteTasks.OnFragmentInteractionListener} interface
+ * {@link Fragment_NavMenu_GroupTasks.OnFragmentInteractionListener} interface
  * to handle interaction events.
- * Use the {@link Fragment_NavMenu_FavoriteTasks#newInstance} factory method to
- * create an instance of this fragment.
  */
-public class Fragment_NavMenu_FavoriteTasks extends Fragment {
-    // TODO: Rename parameter arguments, choose names that match
-    // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
-    private static final String ARG_PARAM1 = "param1";
-    private static final String ARG_PARAM2 = "param2";
-
-    // TODO: Rename and change types of parameters
-    private String mParam1;
-    private String mParam2;
+public class Fragment_NavMenu_GroupTasks extends Fragment {
 
     private OnFragmentInteractionListener mListener;
 
-    //Firebase User ID of current User
-    String userID;
+    //Initialize FirebaseAuth instance
+    public String userID;
+
+    public FirebaseAuth mAuth;
+    FirebaseUser currentUser = null;
+    FirebaseAuth.AuthStateListener authStateListener;
 
     //Initialize the recyclerView
     RecyclerView recyclerViewTaskData;
     TaskDataViewAdapter adapter;
-
     List<TaskData> taskDataListItems;
 
-    public Fragment_NavMenu_FavoriteTasks() {
+    public Fragment_NavMenu_GroupTasks() {
         // Required empty public constructor
-    }
-
-    /**
-     * Use this factory method to create a new instance of
-     * this fragment using the provided parameters.
-     *
-     * @param param1 Parameter 1.
-     * @param param2 Parameter 2.
-     * @return A new instance of fragment Fragment_NavMenu_FavoriteTasks.
-     */
-    // TODO: Rename and change types and number of parameters
-    public static Fragment_NavMenu_FavoriteTasks newInstance(String param1, String param2) {
-        Fragment_NavMenu_FavoriteTasks fragment = new Fragment_NavMenu_FavoriteTasks();
-        Bundle args = new Bundle();
-        args.putString(ARG_PARAM1, param1);
-        args.putString(ARG_PARAM2, param2);
-        fragment.setArguments(args);
-        return fragment;
-    }
-
-    @Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        if (getArguments() != null) {
-            mParam1 = getArguments().getString(ARG_PARAM1);
-            mParam2 = getArguments().getString(ARG_PARAM2);
-        }
-
-        //This enables the search menu function --> further implementation in "onPrepareOptionsMenu"
-        setHasOptionsMenu(true);
     }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-
+        // Inflate the layout for this fragment
         //Define the view object
-        View view = inflater.inflate(R.layout.fragment__nav_menu__favorite_tasks, container, false);
+        View view = inflater.inflate(R.layout.fragment__nav_menu__all_tasks, container, false);
+        //return inflater.inflate(R.layout.fragment_nav_menu_group_tasks, container, false);
+
         //Initiate the RecyclerView object //map the Recyclerview object to the xml RecyclerView
         recyclerViewTaskData = (RecyclerView) view.findViewById(R.id.recyclerViewTaskData);
 
@@ -121,11 +86,13 @@ public class Fragment_NavMenu_FavoriteTasks extends Fragment {
         FirebaseDatabase database = FirebaseHelper.getDatabase();
         DatabaseReference dbRef = database.getReference();
 
-        //retrieve UserId of current logged in User
-        retrieveUserID();
+        // 1. Open Shared Preference File
+        SharedPreferences mSharedPref = getContext().getSharedPreferences("mSharePrefFile", 0);
 
-        //set Reference to current Logged in user
-        dbRef = dbRef.child("taskdata").child(userID);
+        // 2. ID Reference from SharePrefFile to fields (If id does not exist, the default value will be loaded)
+        String userID = (mSharedPref.getString("userID", null));
+
+        dbRef = dbRef.child("taskdata").child("ohJGMlXaQ7c6qcEYp33I6BaQu0J2");
         Query query = dbRef.orderByChild("datecreated");
 
         //set a ValueEventlistener to the database reference that listens if changes are being made to the data
@@ -155,9 +122,8 @@ public class Fragment_NavMenu_FavoriteTasks extends Fragment {
                 // notify the adapter that data has been changed and needs to be refreshed
                 adapter.notifyDataSetChanged();
 
-                //save Shared preferences (Listsize)
-                int mListSize = taskDataListItems.size();
-                saveSharedPreferencesListSize(mListSize);
+                //save Sharred preferences (Listsize)
+                saveSharedPreferences();
             }
 
             @Override
@@ -166,9 +132,20 @@ public class Fragment_NavMenu_FavoriteTasks extends Fragment {
             }
         });
 
-
-        // Inflate the layout for this fragment
         return view;
+    }
+
+    // TODO: Rename method, update argument and hook method into UI event
+    public void onButtonPressed(Uri uri) {
+        if (mListener != null) {
+            mListener.onFragmentInteraction(uri);
+        }
+    }
+
+    @Override
+    public void onDetach() {
+        super.onDetach();
+        mListener = null;
     }
 
     //This picks the searchview from Resources.
@@ -184,9 +161,10 @@ public class Fragment_NavMenu_FavoriteTasks extends Fragment {
 
         // Inflate the menu; this adds items to the action bar if it is present.
         inflater.inflate(R.menu.search_view, menu);
+        //getMenuInflater().inflate(R.menu.search_view, menu);
 
         MenuItem searchItem = menu.findItem(R.id.mSearchView);
-        SearchView searchView = (android.widget.SearchView) searchItem.getActionView();
+        SearchView searchView = (SearchView) searchItem.getActionView();
 
         searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
             @Override
@@ -202,37 +180,6 @@ public class Fragment_NavMenu_FavoriteTasks extends Fragment {
                 return false;
             }
         });
-    }
-
-    /***********************************************************************************************
-     * Method will be called every time a figure has been changed in the search bar
-     **********************************************************************************************/
-    public void executeQuery(String queryText){
-        // 1. Create a new array list for the items matching the query
-        ArrayList<TaskData> filteredList = new ArrayList<>();
-        // 2. for every Item in the list displayed by the recycleview...
-        for (TaskData taskData : taskDataListItems){
-            // 3. ...make the data and query case insensitive and search for the query and add it to the newly created
-            if (taskData.getContent().toLowerCase().contains(queryText.toLowerCase())){
-                filteredList.add(taskData);
-            }
-
-            //set the list to the adaptermethod "filterList()"
-            adapter.filterList(filteredList);
-        }
-    }
-
-    // TODO: Rename method, update argument and hook method into UI event
-    public void onButtonPressed(Uri uri) {
-        if (mListener != null) {
-            mListener.onFragmentInteraction(uri);
-        }
-    }
-
-    @Override
-    public void onDetach() {
-        super.onDetach();
-        mListener = null;
     }
 
     /**
@@ -251,25 +198,35 @@ public class Fragment_NavMenu_FavoriteTasks extends Fragment {
     }
 
     /***********************************************************************************************
+     * Method will be called every time a figure has been changed in the search bar
+     **********************************************************************************************/
+    public void executeQuery(String queryText){
+        // 1. Create a new array list for the items matching the query
+        ArrayList<TaskData> filteredList = new ArrayList<>();
+        // 2. for every Item in the list displayed by the recycleview...
+        for (TaskData taskData : taskDataListItems){
+
+            // 3. ...make the data and query case insensitive and search for the query and add it to the newly created
+            if (taskData.getContent().toLowerCase().contains(queryText.toLowerCase())){
+                filteredList.add(taskData);
+            }
+
+            adapter.filterList(filteredList);
+        }
+    }
+
+    /***********************************************************************************************
      * SAVE SHARED PREFERENCES TO FILE
      **********************************************************************************************/
-    public void saveSharedPreferencesListSize(int mListSize){
+    public void saveSharedPreferences(){
         // 1. Open Shared Preference File
         SharedPreferences mSharedPref = getContext().getSharedPreferences("mSharePrefFile", 0);
         // 2. Initialize Editor Class
         SharedPreferences.Editor editor = mSharedPref.edit();
         // 3. Get Values from fields and store in Shared Preferences
-        editor.putInt("listSizeTasksFavorite", mListSize);
+        editor.putInt("listSizeTasksAll", taskDataListItems.size()-1);
+        editor.putString("userID", userID);
         // 4. Store the keys
         editor.commit();
-    }
-
-    public void retrieveUserID(){
-
-        NavigationActivity navigationActivity;
-        navigationActivity = (NavigationActivity) getActivity();
-
-        //attach public variable to local variable
-        userID = navigationActivity.userID;
     }
 }
