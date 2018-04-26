@@ -18,6 +18,7 @@ import android.widget.SearchView;
 
 
 import com.google.android.gms.tasks.Task;
+import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
@@ -51,6 +52,9 @@ public class Fragment_NavMenu_FavoriteTasks extends Fragment {
 
     //Firebase User ID of current User
     String userID;
+
+    //for storing the listsize of the tasklist array
+    int mListSize;
 
     //Initialize the recyclerView
     RecyclerView recyclerViewTaskData;
@@ -128,36 +132,83 @@ public class Fragment_NavMenu_FavoriteTasks extends Fragment {
         dbRef = dbRef.child("taskdata").child(userID);
         Query query = dbRef.orderByChild("datecreated");
 
-        //set a ValueEventlistener to the database reference that listens if changes are being made to the data
-        query.addValueEventListener(new ValueEventListener() {
+        // add Child eventlistener to the database reference, this updates the Arraylist and notifies the Adapter of the recyclerview, that the data has been changed
+        query.addChildEventListener(new ChildEventListener() {
             @Override
-            public void onDataChange(DataSnapshot dataSnapshot) {
+            public void onChildAdded(DataSnapshot dataSnapshot, String s) {
 
-                //delete all items from the list
-                taskDataListItems.clear(); //TODO: implement funtion that only single dataset is changed if necessary
+                //retrieve data as a TaskData object
+                TaskData taskData = dataSnapshot.getValue(TaskData.class);
+                //define boolean statement
+                Boolean mIsfavorite = taskData.getFavorite();
 
-                //returns a collection of the children under the set database reference
-                Iterable<DataSnapshot> children = dataSnapshot.getChildren();
-
-                // Shake hands with each of the collected childrens
-                //Iterate over the collection of "children" specified above and put it into a variable called "child"
-                for (DataSnapshot child : children ) {
-                    //child.getValue(TravelExpenseData.class); "VOR STRG + ALT +V"
-                    TaskData taskData = child.getValue(TaskData.class);
-                    Boolean mIsfavorite = taskData.getFavorite();
-
-                    if (mIsfavorite != null && mIsfavorite){
-                        //add the retrieved data to the ArrayList if it fits the requirements
-                        taskDataListItems.add(taskData);
-                    }
+                if (mIsfavorite != null && mIsfavorite){
+                    //add the retrieved data to the ArrayList if it fits the requirements
+                    taskDataListItems.add(taskData);
                 }
 
                 // notify the adapter that data has been changed and needs to be refreshed
                 adapter.notifyDataSetChanged();
 
-                //save Shared preferences (Listsize)
-                int mListSize = taskDataListItems.size();
+                //save the listsize to shared preferences
+                mListSize = taskDataListItems.size();
                 saveSharedPreferencesListSize(mListSize);
+            }
+
+            @Override
+            public void onChildChanged(DataSnapshot dataSnapshot, String s) {
+
+                int mListIndex = 0;
+                TaskData taskDataUpdated = dataSnapshot.getValue(TaskData.class);
+                String snapShotKey = dataSnapshot.getKey();
+
+                for (TaskData taskData : taskDataListItems) {
+                    // retrive the id of the task that has been changed
+                    String mTaskID = taskData.getId();
+
+                    if (mTaskID.equals(snapShotKey)){
+                        //IF the correct id is found in the Data snapshot, change the respective object in the array list
+                        //set the retrieved data to the existing index item of the ArrayList
+                        taskDataListItems.set(mListIndex, taskDataUpdated);
+                    }
+
+                    //add +1 to the index value for each iteration
+                    mListIndex ++;
+                }
+
+                // notify the adapter that data has been changed and needs to be refreshed
+                adapter.notifyDataSetChanged();
+            }
+
+            @Override
+            public void onChildRemoved(DataSnapshot dataSnapshot) {
+
+                int mListIndex = 0;
+                String snapShotKey = dataSnapshot.getKey();
+
+                for (TaskData taskData : taskDataListItems) {
+                    String mTaskID = taskData.getId();
+
+                    if (mTaskID.equals(snapShotKey)){
+                        //IF the correct id is found in the Data snapshot, remove the respective object in the array list
+                        taskDataListItems.remove(mListIndex);
+                    }
+
+                    //add +1 to the index value for each iteration
+                    mListIndex ++;
+                }
+
+                // notify the adapter that data has been changed and needs to be refreshed
+                adapter.notifyDataSetChanged();
+
+                //save the listsize to shared preferences
+                mListSize = taskDataListItems.size();
+                saveSharedPreferencesListSize(mListSize);
+            }
+
+            @Override
+            public void onChildMoved(DataSnapshot dataSnapshot, String s) {
+
             }
 
             @Override
@@ -165,7 +216,6 @@ public class Fragment_NavMenu_FavoriteTasks extends Fragment {
 
             }
         });
-
 
         // Inflate the layout for this fragment
         return view;

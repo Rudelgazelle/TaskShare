@@ -21,6 +21,7 @@ import android.widget.Adapter;
 import android.widget.SearchView;
 import android.widget.Toast;
 
+import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.ChildEventListener;
@@ -58,6 +59,10 @@ public class Fragment_NavMenu_AllTasks extends Fragment {
 
     //Firebase current user variable
     String userID;
+
+    //for storing the listsize of the tasklist array
+    int mListSize;
+    int mListIndex;
 
     //Initialize the recyclerView
     RecyclerView recyclerViewTaskData;
@@ -138,6 +143,7 @@ public class Fragment_NavMenu_AllTasks extends Fragment {
         dbRef = dbRef.child("taskdata").child(userID);
         Query query = dbRef.orderByChild("datecreated");
 
+        // add Child eventlistener to the database reference, this updates the Arraylist and notifies the Adapter of the recyclerview, that the data has been changed
         query.addChildEventListener(new ChildEventListener() {
             @Override
             public void onChildAdded(DataSnapshot dataSnapshot, String s) {
@@ -148,16 +154,72 @@ public class Fragment_NavMenu_AllTasks extends Fragment {
                 taskDataListItems.add(taskData);
                 // notify the adapter that data has been changed and needs to be refreshed
                 adapter.notifyDataSetChanged();
+
+                //save the listsize to shared preferences
+                mListSize = taskDataListItems.size();
+                saveSharedPreferences(mListSize);
             }
 
             @Override
             public void onChildChanged(DataSnapshot dataSnapshot, String s) {
 
+                Log.d("Task_Changed", "onChildChanged is triggered");
+
+                int mListIndex = 0;
+
+                TaskData taskDataUpdated = dataSnapshot.getValue(TaskData.class);
+                String snapShotKey = dataSnapshot.getKey();
+
+                Log.d("Task_Changed", "snapShotKey: " + dataSnapshot.getKey());
+
+                for (TaskData taskData : taskDataListItems) {
+                    // retrive the id of the task that has been changed
+                    String mTaskID = taskData.getId();
+
+                    Log.d("Task_Changed", "mID: " + mTaskID);
+
+                    if (mTaskID.equals(snapShotKey)){
+                        Log.d("Task_Changed", "ID MATCH!");
+                        //IF the correct id is found in the Data snapshot, change the respective object in the array list
+                        //set the retrieved data to the existing index item of the ArrayList
+                        taskDataListItems.set(mListIndex, taskDataUpdated);
+                    }
+
+                    //add +1 to the index value for each iteration
+                    mListIndex ++;
+                }
+
+                adapter.notifyDataSetChanged();
             }
 
             @Override
             public void onChildRemoved(DataSnapshot dataSnapshot) {
 
+                int mListIndex = 0;
+
+                String snapShotKey = dataSnapshot.getKey();
+
+                Log.d("Task_Changed", "snapShotKey: " + dataSnapshot.getKey());
+
+                for (TaskData taskData : taskDataListItems) {
+                    String mTaskID = taskData.getId();
+
+                    Log.d("Task_Changed", "mID: " + mTaskID);
+
+                    if (mTaskID.equals(snapShotKey)){
+                        Log.d("Task_Changed", "ID MATCH!");
+                        //IF the correct id is found in the Data snapshot, remove the respective object in the array list
+                        taskDataListItems.remove(mListIndex);
+                    }
+                    //add +1 to the index value for each iteration
+                    mListIndex ++;
+                }
+
+                adapter.notifyDataSetChanged();
+
+                //save the listsize to shared preferences
+                mListSize = taskDataListItems.size();
+                saveSharedPreferences(mListSize);
             }
 
             @Override
@@ -170,44 +232,6 @@ public class Fragment_NavMenu_AllTasks extends Fragment {
 
             }
         });
-
-        /*//set a ValueEventlistener to the database reference that listens if changes are being made to the data
-        query.addValueEventListener(new ValueEventListener() {
-            @Override
-            public void onDataChange(DataSnapshot dataSnapshot) {
-
-                //delete all items from the list
-                taskDataListItems.clear(); //TODO: implement funtion that only single dataset is changed if necessary
-
-                //returns a collection of the children under the set database reference
-                Iterable<DataSnapshot> children = dataSnapshot.getChildren();
-
-                // Shake hands with each of the collected childrens
-                //Iterate over the collection of "children" specified above and put it into a variable called "child"
-                for (DataSnapshot child : children ) {
-                    //child.getValue(TravelExpenseData.class); "VOR STRG + ALT +V"
-                    TaskData taskData = child.getValue(TaskData.class);
-                    //add the retrieved data to the ArrayList
-                    taskDataListItems.add(taskData);
-                }
-
-                // Instanciate a new adapter for the Recycleview and parse the "listitem" and "Context"
-                adapter = new TaskDataViewAdapter(taskDataListItems, getContext());
-                //set the adapter to the recyclerview
-                recyclerViewTaskData.setAdapter(adapter);
-                // notify the adapter that data has been changed and needs to be refreshed
-                adapter.notifyDataSetChanged();
-
-                //save Shared preferences (Listsize)
-                int listSize = taskDataListItems.size();
-                saveSharedPreferences(listSize);
-            }
-
-            @Override
-            public void onCancelled(DatabaseError databaseError) {
-
-            }
-        });*/
 
         // Inflate the layout for this fragment
         return view;
