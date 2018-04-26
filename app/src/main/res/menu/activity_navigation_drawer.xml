@@ -3,43 +3,46 @@
     xmlns:tools="http://schemas.android.com/tools"
     tools:showIn="navigation_view">
 
-    <item android:title="@string/navigation_drawer_submenuheader_general_title"
-        android:id="@+id/submenu_tasks"
-        android:orderInCategory="0">
-        <menu>
-            <group android:id="@+id/tasks">
-                <item
-                    android:id="@+id/nav_allTasks"
-                    android:icon="@drawable/ic_task_all"
-                    android:title="@string/navigation_drawer_submenu_general_allTasks" />
-                <item
-                    android:id="@+id/nav_favoriteTasks"
-                    android:icon="@drawable/ic_task_favorite"
-                    android:title="@string/navigation_drawer_submenu_general_favoriteTasks" />
-                <item
-                    android:id="@+id/nav_overdueTasks"
-                    android:icon="@drawable/ic_menu_tasks_overdue"
-                    android:title="@string/navigation_drawer_submenu_general_overdueTasks" />
-            </group>
-        </menu>
-    </item>
+    <group android:id="@+id/groupTaskMenu"
+        android:visible="true">
+        <item android:title="@string/navigation_drawer_submenuheader_general_title"
+            android:id="@+id/submenu_tasks"
+            android:orderInCategory="0">
+            <menu>
+                <group android:id="@+id/tasks">
+                    <item
+                        android:id="@+id/nav_allTasks"
+                        android:icon="@drawable/ic_task_all"
+                        android:title="@string/navigation_drawer_submenu_general_allTasks" />
+                    <item
+                        android:id="@+id/nav_favoriteTasks"
+                        android:icon="@drawable/ic_task_favorite"
+                        android:title="@string/navigation_drawer_submenu_general_favoriteTasks" />
+                    <item
+                        android:id="@+id/nav_overdueTasks"
+                        android:icon="@drawable/ic_menu_tasks_overdue"
+                        android:title="@string/navigation_drawer_submenu_general_overdueTasks" />
+                </group>
+            </menu>
+        </item>
 
-    <item android:title="@string/navigation_drawer_submenu_group_title"
-        android:id="@+id/submenu_groups"
-        android:orderInCategory="0">
-        <menu>
-            <group android:id="@+id/groups">
-                <item
-                    android:id="@+id/nav_addGroup"
-                    android:icon="@drawable/ic_menu_group_add"
-                    android:title="@string/navigation_drawer_submenu_group_addGroup"
-                    android:orderInCategory="1"/>
-            </group>
-        </menu>
-    </item>
+        <item android:title="@string/navigation_drawer_submenu_group_title"
+            android:id="@+id/submenu_groups"
+            android:orderInCategory="0">
+            <menu>
+                <group android:id="@+id/groups">
+                    <item
+                        android:id="@+id/nav_addGroup"
+                        android:icon="@drawable/ic_menu_group_add"
+                        android:title="@string/navigation_drawer_submenu_group_addGroup"
+                        android:orderInCategory="1">
+                    </item>
+                </group>
+            </menu>
+        </item>
 
-    <group android:orderInCategory="3">
-        <item android:title="@string/navigation_drawer_menu_header_settings">
+        <item android:title="@string/navigation_drawer_menu_header_settings"
+            android:orderInCategory="3">
             <menu>
                 <group android:id="@+id/groupSettings">
                     <item
@@ -53,6 +56,18 @@
                 </group>
             </menu>
         </item>
+    </group>
+
+    <group android:id="@+id/groupUserAccountMenu"
+        android:visible="false">
+        <item
+            android:id="@+id/nav_userAccont"
+            android:icon="@drawable/ic_menu_settings"
+            android:title="Account Settings" />
+        <item
+            android:id="@+id/nav_userLogout"
+            android:icon="@drawable/ic_menu_slideshow"
+            android:title="Logout" />
     </group>
 
 </menu>

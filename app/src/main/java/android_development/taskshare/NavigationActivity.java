@@ -19,6 +19,7 @@ import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.Button;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -59,6 +60,7 @@ public class NavigationActivity extends AppCompatActivity
     public TextView tvUserName;
     public TextView tvUserMail;
     public Button btnUserSetting;
+    public ImageButton ibtnToggleUserSettings;
 
     //Initialize FirebaseAuth instance
     public FirebaseAuth mAuth;
@@ -77,6 +79,7 @@ public class NavigationActivity extends AppCompatActivity
     Menu menu;
     SubMenu subMenuGroups;
     MenuItem menuItem;
+    Boolean mActionSettingsAreToggled;
 
     int groupID;
     int itemID;
@@ -100,6 +103,10 @@ public class NavigationActivity extends AppCompatActivity
         setContentView(R.layout.activity_navigation);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+
+        //Boolean required for use of the UserSettingsToggle Button
+        mActionSettingsAreToggled = false;
+
 
         /***********************************************************************************************
          *
@@ -209,6 +216,36 @@ public class NavigationActivity extends AppCompatActivity
             }
         });
 
+        //IMPLEMENTATION OF TOGGLE BUTTON IN THE NAVHEADER TO TOGGLE BETWEEN TWO MENU GROUPS (general and user Settings)
+        ibtnToggleUserSettings = header.findViewById(R.id.ibtnToggleAccountSettings);
+        ibtnToggleUserSettings.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+
+                if (!mActionSettingsAreToggled){
+                    mActionSettingsAreToggled = true;
+                }else {
+                    mActionSettingsAreToggled = false;
+                }
+
+                //change the image of button from arrow down, to arrow up and visa versa based on the boolean
+                if (mActionSettingsAreToggled){
+                    //set image for button
+                    ibtnToggleUserSettings.setBackgroundResource(R.drawable.ic_action_toggle_account_settings_up);
+                    //hide the Task menu and make Account settings menu visible
+                    menu.setGroupVisible(R.id.groupTaskMenu, false);
+                    menu.setGroupVisible(R.id.groupUserAccountMenu, true);
+
+                } else {
+                    ibtnToggleUserSettings.setBackgroundResource(R.drawable.ic_action_toggle_account_settings_down);
+                    //hide the Account Settings menu and make Task menu visible
+                    menu.setGroupVisible(R.id.groupTaskMenu, true);
+                    menu.setGroupVisible(R.id.groupUserAccountMenu, false);
+                }
+            }
+        });
+
+
         /***********************************************************************************************
          *
          * METHOD TO ADD/DELETE/CHANGE MENU ITEMS IN DRAWER MENU
@@ -224,10 +261,10 @@ public class NavigationActivity extends AppCompatActivity
         // Create a new instance of a ArrayList; Initialize the above defined listitem object
         menuGroupItemList = new ArrayList<>();
 
+        //TODO: A QUERY HAS TO BE USED, THAT JUST PICKS OUT THE GROUPS; WHERE THE USER IS A MEMBER OF. Like it is now, the retrieved dataset will be way too big in the future
+
         // set the database reference to the correct child object (TaskData)
-        //TODO: CHANGE THE HARD CODED GROUP CODE TO SOMETHING ELSE
         DatabaseReference dbRefGroup = dbRef.child("groupdata");
-        //DatabaseReference dbRefGroup = dbRef.child("group");
         Query query = dbRefGroup;
 
         query.addChildEventListener(new ChildEventListener() {
@@ -236,58 +273,72 @@ public class NavigationActivity extends AppCompatActivity
 
                 //retrieve data as a Groupdata object
                 GroupData groupData = dataSnapshot.getValue(GroupData.class);
-                //add the retrived object to Arraylist
-                menuGroupItemList.add(groupData);
+                Map<String, MemberData> mMemberHashMap = groupData.getMembers();
 
-                //set groupid to the Group for GroupTasks defined in "activity_navigation_drawer"
-                groupID = R.id.groups;
-                //generate Item identifier and set as ItemID
+                //check if map is not empty...
+                if (mMemberHashMap.size() > 0){
+                    //if hashmap is not empty..
 
-                //TODO: TEST OF NEW VIEW ID IN OBJECT
-                itemID = groupData.getItemId();
-                //itemID = View.generateViewId();
-                //set the order to NONE
-                itemOrder = Menu.NONE;
-                //set variables for submenu item
-                itemTitle = groupData.getName();
+                    // Check if the current user is part of the memberlist
+                    Boolean mIsMember = mMemberHashMap.containsKey(userID);
+
+                    //if the durrent user is a member, than add the menu Item to the Navigation
+                    if (mIsMember){
+
+                        //add the retrived object to Arraylist
+                        menuGroupItemList.add(groupData);
+
+                        //set groupid to the Group for GroupTasks defined in "activity_navigation_drawer"
+                        groupID = R.id.groups;
+                        //generate Item identifier and set as ItemID
+
+                        //TODO: TEST OF NEW VIEW ID IN OBJECT
+                        itemID = groupData.getItemId();
+                        //itemID = View.generateViewId();
+                        //set the order to NONE
+                        itemOrder = Menu.NONE;
+                        //set variables for submenu item
+                        itemTitle = groupData.getName();
 
 
-                //Add menu items under the "Groups" Submenu and add a menuitemclicklistener
-                menuItem = menu.findItem(R.id.submenu_groups).getSubMenu().add(groupID, itemID, itemOrder, itemTitle).setIcon(R.drawable.ic_menu_share)
-                        .setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
-                    @Override
-                    public boolean onMenuItemClick(MenuItem itemClicked) {
+                        //Add menu items under the "Groups" Submenu and add a menuitemclicklistener
+                        menuItem = menu.findItem(R.id.submenu_groups).getSubMenu().add(groupID, itemID, itemOrder, itemTitle).setIcon(R.drawable.ic_menu_share)
+                                .setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
+                                    @Override
+                                    public boolean onMenuItemClick(MenuItem itemClicked) {
 
-                        //get the item ID of the clicked menu item
-                        int mItemIdPicked = itemClicked.getItemId();
-                        Log.d("Menu1", "The ID of the clicked item is: " + mItemIdPicked);
+                                        //get the item ID of the clicked menu item
+                                        int mItemIdPicked = itemClicked.getItemId();
+                                        Log.d("Menu1", "The ID of the clicked item is: " + mItemIdPicked);
 
-                        // iterate throug the Arraylist and search for an entry with the specific itemID as value of itemID field
-                        for (GroupData groupData : menuGroupItemList) {
-                            int itemID = groupData.getItemId();
-                            //Log.d("Menu", "mID: " + groupData.getId());
+                                        // iterate throug the Arraylist and search for an entry with the specific itemID as value of itemID field
+                                        for (GroupData groupData : menuGroupItemList) {
+                                            int itemID = groupData.getItemId();
+                                            //Log.d("Menu", "mID: " + groupData.getId());
 
-                            if (mItemIdPicked == itemID){
-                                Log.d("Menu2", "The ID of the group is: " + itemID);
-                            }
-                        }
+                                            if (mItemIdPicked == itemID){
+                                                Log.d("Menu2", "The ID of the group is: " + itemID);
+                                            }
+                                        }
 
-                        //Put the Activity title based on the Group name listed in the menus item title
-                        activityTitle = itemClicked.getTitle().toString();
-                        //Set the title of the activity
-                        getSupportActionBar().setTitle(activityTitle);
+                                        //Put the Activity title based on the Group name listed in the menus item title
+                                        activityTitle = itemClicked.getTitle().toString();
+                                        //Set the title of the activity
+                                        getSupportActionBar().setTitle(activityTitle);
 
-                        //Open Fragment and parse the required itemID for the query of groups
-                        Fragment_NavMenu_GroupTasks fragment = new Fragment_NavMenu_GroupTasks();
-                        FragmentTransaction fragmentTransaction = getSupportFragmentManager().beginTransaction();
-                        fragmentTransaction.add(R.id.content_main_navigation, fragment);
-                        fragmentTransaction.commit();
+                                        //Open Fragment and parse the required itemID for the query of groups
+                                        Fragment_NavMenu_GroupTasks fragment = new Fragment_NavMenu_GroupTasks();
+                                        FragmentTransaction fragmentTransaction = getSupportFragmentManager().beginTransaction();
+                                        fragmentTransaction.add(R.id.content_main_navigation, fragment);
+                                        fragmentTransaction.commit();
 
-                        //TODO: PUTEXTRA METHOD WITH PARSING THE GroupID to be used in the opened GroupActivity
+                                        //TODO: PUTEXTRA METHOD WITH PARSING THE GroupID to be used in the opened GroupActivity
 
-                        return false;
+                                        return false;
+                                    }
+                                });
                     }
-                });
+                }
             }
 
             @Override
