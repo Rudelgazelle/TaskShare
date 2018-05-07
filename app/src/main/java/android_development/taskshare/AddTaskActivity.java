@@ -168,7 +168,7 @@ public class AddTaskActivity extends AppCompatActivity {
                     userID = currentUser.getUid();
 
                     TaskData taskData = new TaskData(key, content, currentDate, mDueDate, mIsFavorite);
-                    dbRef.child("taskdata").child(userID).child(key).setValue(taskData);
+                    dbRef.child("userdata").child(userID).child("tasks").child(key).setValue(taskData);
                 }
 
                 //Show snackbar with message, that data has been stored to the database

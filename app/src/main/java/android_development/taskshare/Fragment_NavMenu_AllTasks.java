@@ -140,7 +140,7 @@ public class Fragment_NavMenu_AllTasks extends Fragment {
         //set the adapter to the recyclerview
         recyclerViewTaskData.setAdapter(adapter);
 
-        dbRef = dbRef.child("taskdata").child(userID);
+        dbRef = dbRef.child("userdata").child(userID).child("tasks");
         Query query = dbRef.orderByChild("datecreated");
 
         // add Child eventlistener to the database reference, this updates the Arraylist and notifies the Adapter of the recyclerview, that the data has been changed

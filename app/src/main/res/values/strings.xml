@@ -145,5 +145,6 @@
     <string name="nav_header_desc">Navigation header</string>
     <string name="title_activity_add_group">Add Group...</string>
     <string name="title_activity_group_details">GroupDetailsActivity</string>
+    <string name="title_activity_add_group_task">AddGroupTaskActivity</string>
 
 </resources>

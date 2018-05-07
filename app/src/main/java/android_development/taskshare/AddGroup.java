@@ -20,6 +20,9 @@ import java.util.HashMap;
 
 public class AddGroup extends AppCompatActivity {
 
+    //Define Field variable
+    EditText etGroupName;
+
     //define variables
     public String userID;
     public Long userHashCode;
@@ -34,6 +37,9 @@ public class AddGroup extends AppCompatActivity {
         //Load Shared preferences from file (e.g. userID)
         loadSharedPreferences();
 
+        //Initialize the EditText field for groupname
+        etGroupName = (EditText) findViewById(R.id.etGroupName);
+
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -44,50 +50,18 @@ public class AddGroup extends AppCompatActivity {
                 Log.d("UniqeID", "uniqueID is: " + uniqueID);
             }
         });
+
+
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
-
-        /***********************************************************************************************
-         * METHOD TO SAVE DATA FROM FIELDS TO DATABASE
-         **********************************************************************************************/
-
-        final EditText etGroupName = (EditText) findViewById(R.id.etGroupName);
 
         ImageButton ibtnSave = (ImageButton) findViewById(R.id.ibtnSave);
         ibtnSave.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
 
-                // Initialize the Firebase Database instance
-                FirebaseDatabase database;
-                database = FirebaseHelper.getDatabase();
-
-                DatabaseReference dbRef;
-                dbRef = database.getReference();
-
-                //DEFAULT DATA FOR DATABASE---------------------------------------------------------
-                HashMap<String, GroupData> groupsHashmap = null;
-                String mGroupID = dbRef.push().getKey();
-                String mGroupName = etGroupName.getText().toString();
-                String mGroupOwner = userID;
-                //Generated random Integer based on timestamp and user hash value
-                int mItemId = generateUniqueItemID();
-
-                //Create Hashmap for Member Data Objects and fill from snapshot
-                HashMap<String, MemberData> membersHashMap = new HashMap<>();
-                MemberData memberData1 = new MemberData("memberIDxxx", "Lars B.", "member");
-                MemberData memberData2 = new MemberData("memberIDxyy", "Christina", "member");
-                membersHashMap.put(memberData1.getId() , memberData1);
-                membersHashMap.put(memberData2.getId(), memberData2);
-
-                //If user is logged in, get the uniqueID of the current user and store dataset in the Database
-                if (userID != null) {
-                    //Create set of Hashmap, to be populated into Firebase Database
-                    GroupData groupData1 = new GroupData(mGroupID, membersHashMap, mGroupName, mGroupOwner, mItemId);
-                    //Add the groupData1 object to the database
-                    dbRef.child("groupdata").child(mGroupID).setValue(groupData1);
-                    Log.d("GroupData", "ItemID is: " + mItemId);
-                }
+                //create group and store in database
+                createGroup();
 
                 //Show snackbar with message, that data has been stored to the database
                 Snackbar.make(view, "Data has been stored in google Firebase", Snackbar.LENGTH_LONG)
@@ -123,6 +97,58 @@ public class AddGroup extends AppCompatActivity {
         int uniqueID = id+additionalId;
 
         return uniqueID;
+    }
+
+
+    /***********************************************************************************************
+     * METHOD TO CREATE NEW GROUP BASED ON DATA FROM FIELDS
+     **********************************************************************************************/
+    public void createGroup(){
+
+        // Initialize the Firebase Database instance
+        FirebaseDatabase database;
+        database = FirebaseHelper.getDatabase();
+
+        DatabaseReference dbRef;
+        dbRef = database.getReference();
+
+        //----------------------------------------------------------------------------------
+        //CREATE GROUP ENTRY WITH DEFAULT DATA OF OWNER
+        //----------------------------------------------------------------------------------
+
+        String mGroupID = dbRef.push().getKey();
+        String mGroupName = etGroupName.getText().toString();
+        String mGroupOwner = userID;
+        int mTaskCount = 0;
+        //Generated random Integer based on timestamp and user hash value
+        int mItemId = generateUniqueItemID();
+
+        //Create Hashmap for default Member Data Objects and add defaul owner data
+        HashMap<String, MemberData> membersHashMap = new HashMap<>();
+        MemberData memberDataGroupOwner = new MemberData(userID, "Lars B.", "owner");
+        membersHashMap.put(memberDataGroupOwner.getId() , memberDataGroupOwner);
+
+        //initialize and set new "group" object to be added to the dataset
+        GroupData groupData = new GroupData(mGroupID, membersHashMap, mGroupName, mGroupOwner, mItemId, mTaskCount);
+
+        //If user is logged in, get the uniqueID of the current user and store dataset in the Database
+        if (userID != null) {
+            //Add the groupData object to the database
+            dbRef.child("groupdata").child(mGroupID).setValue(groupData);
+            Log.d("GroupData", "ItemID is: " + mItemId);
+        }
+
+        //----------------------------------------------------------------------------------
+        //ADD MEMBERSHIP OF GROUP INTO USER SPECIFIC USERDATA OBJECT IN DATABASE
+        //----------------------------------------------------------------------------------
+
+        //Create new GroupMemberShip Object
+        String mGroupMemberShipID = groupData.getId();
+        String mGroupMemberShipCategory = "owner";
+        GroupMemberShip groupMemberShip = new GroupMemberShip(mGroupMemberShipID, mGroupMemberShipCategory);
+
+        //set DB reference to user specific entry and set Value of group ID into the child location
+        dbRef.child("userdata").child(userID).child("groupmemberships").child(mGroupMemberShipID).setValue(groupMemberShip);
     }
 
 }

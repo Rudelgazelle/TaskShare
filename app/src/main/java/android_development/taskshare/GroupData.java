@@ -10,6 +10,7 @@ public class GroupData {
     private String owner;
     public Map<String, MemberData> members;
     private int itemId;
+    private int taskCount;
 
     //private List<String> members;
 
@@ -17,12 +18,13 @@ public class GroupData {
         //Default constructor required for Firebase calls to DataSnapshot.getValue(TaskData.class)
     }
 
-    public GroupData (String id, Map<String, MemberData> members, String name, String owner, int itemId){
+    public GroupData (String id, Map<String, MemberData> members, String name, String owner, int itemId, int taskCount){
         this.id = id;
         this.members = members;
         this.name = name;
         this.owner = owner;
         this.itemId = itemId;
+        this.taskCount = taskCount;
     }
 
     public String getId() {
@@ -63,5 +65,13 @@ public class GroupData {
 
     public void setItemId(int itemId) {
         this.itemId = itemId;
+    }
+
+    public int getTaskCount() {
+        return taskCount;
+    }
+
+    public void setTaskCount(int taskCount) {
+        this.taskCount = taskCount;
     }
 }

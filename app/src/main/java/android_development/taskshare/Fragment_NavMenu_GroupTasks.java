@@ -42,6 +42,8 @@ public class Fragment_NavMenu_GroupTasks extends Fragment {
     //Initialize FirebaseAuth instance
     public String userID;
 
+    public String mGroupID;
+
     public FirebaseAuth mAuth;
     FirebaseUser currentUser = null;
     FirebaseAuth.AuthStateListener authStateListener;
@@ -58,10 +60,16 @@ public class Fragment_NavMenu_GroupTasks extends Fragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        // Inflate the layout for this fragment
         //Define the view object
+        // LAYOUT FROM "ALL TASKS" CAN BE REUSED, BECAUSE THEY LOOK IDENTICAL
         View view = inflater.inflate(R.layout.fragment__nav_menu__all_tasks, container, false);
         //return inflater.inflate(R.layout.fragment_nav_menu_group_tasks, container, false);
+
+        //retrieve the userID and Group IF from NavigationActivity
+        retrieveUserIDandGroupID();
+
+        //TODO: ERROR, THIS DOES NOT GET EXECUTED?!!!?!?!!
+        Log.d("Fragment", "The ID of the group: " + mGroupID);
 
         //Initiate the RecyclerView object //map the Recyclerview object to the xml RecyclerView
         recyclerViewTaskData = (RecyclerView) view.findViewById(R.id.recyclerViewTaskData);
@@ -86,13 +94,7 @@ public class Fragment_NavMenu_GroupTasks extends Fragment {
         FirebaseDatabase database = FirebaseHelper.getDatabase();
         DatabaseReference dbRef = database.getReference();
 
-        // 1. Open Shared Preference File
-        SharedPreferences mSharedPref = getContext().getSharedPreferences("mSharePrefFile", 0);
-
-        // 2. ID Reference from SharePrefFile to fields (If id does not exist, the default value will be loaded)
-        String userID = (mSharedPref.getString("userID", null));
-
-        dbRef = dbRef.child("taskdata").child("ohJGMlXaQ7c6qcEYp33I6BaQu0J2");
+        dbRef = dbRef.child("groupdata").child(mGroupID);
         Query query = dbRef.orderByChild("datecreated");
 
         //set a ValueEventlistener to the database reference that listens if changes are being made to the data
@@ -111,19 +113,13 @@ public class Fragment_NavMenu_GroupTasks extends Fragment {
                 for (DataSnapshot child : children ) {
                     //child.getValue(TravelExpenseData.class); "VOR STRG + ALT +V"
                     TaskData taskData = child.getValue(TaskData.class);
-                    Boolean mIsfavorite = taskData.getFavorite();
 
-                    if (mIsfavorite != null && mIsfavorite){
-                        //add the retrieved data to the ArrayList if it fits the requirements
-                        taskDataListItems.add(taskData);
-                    }
+                    //add the retrieved data to the ArrayList if it fits the requirements
+                    taskDataListItems.add(taskData);
                 }
 
                 // notify the adapter that data has been changed and needs to be refreshed
                 adapter.notifyDataSetChanged();
-
-                //save Sharred preferences (Listsize)
-                saveSharedPreferences();
             }
 
             @Override
@@ -132,6 +128,7 @@ public class Fragment_NavMenu_GroupTasks extends Fragment {
             }
         });
 
+        // Inflate the layout for this fragment
         return view;
     }
 
@@ -215,18 +212,13 @@ public class Fragment_NavMenu_GroupTasks extends Fragment {
         }
     }
 
-    /***********************************************************************************************
-     * SAVE SHARED PREFERENCES TO FILE
-     **********************************************************************************************/
-    public void saveSharedPreferences(){
-        // 1. Open Shared Preference File
-        SharedPreferences mSharedPref = getContext().getSharedPreferences("mSharePrefFile", 0);
-        // 2. Initialize Editor Class
-        SharedPreferences.Editor editor = mSharedPref.edit();
-        // 3. Get Values from fields and store in Shared Preferences
-        editor.putInt("listSizeTasksAll", taskDataListItems.size()-1);
-        editor.putString("userID", userID);
-        // 4. Store the keys
-        editor.commit();
+    public void retrieveUserIDandGroupID(){
+
+        NavigationActivity navigationActivity;
+        navigationActivity = (NavigationActivity) getActivity();
+
+        //attach public variable to local variable
+        userID = navigationActivity.userID;
+        mGroupID = navigationActivity.mGroupIDforFragment;
     }
 }
