@@ -3,6 +3,7 @@ package android_development.taskshare;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
@@ -11,21 +12,46 @@ import android.util.Log;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.ImageButton;
+import android.widget.TextView;
+import android.widget.Toast;
 
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.android.gms.tasks.Task;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.firestore.CollectionReference;
+import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.EventListener;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.FirebaseFirestoreException;
 
+import org.w3c.dom.Document;
+
+import java.security.acl.Group;
 import java.util.HashMap;
+import java.util.Map;
+
+import javax.annotation.Nullable;
 
 
 public class AddGroup extends AppCompatActivity {
 
-    //Define Field variable
-    EditText etGroupName;
 
+    public static final String ID_KEY = "id";
+    public static final String GROUPNAME_KEY = "groupname";
+    public static final String TAG = "Firestore";
     //define variables
     public String userID;
     public Long userHashCode;
+
+    private FirebaseFirestore mFirestoreRef;
+    private DocumentReference mDocumentRef;
+    private CollectionReference mCollectionRef;
+
+    private TextView tvGroupID;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -34,11 +60,11 @@ public class AddGroup extends AppCompatActivity {
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
+        //DELETE AFTER TUTORIAL
+        tvGroupID = (TextView) findViewById(R.id.textView4);
+
         //Load Shared preferences from file (e.g. userID)
         loadSharedPreferences();
-
-        //Initialize the EditText field for groupname
-        etGroupName = (EditText) findViewById(R.id.etGroupName);
 
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
         fab.setOnClickListener(new View.OnClickListener() {
@@ -56,7 +82,8 @@ public class AddGroup extends AppCompatActivity {
 
 
         ImageButton ibtnSave = (ImageButton) findViewById(R.id.ibtnSave);
-        ibtnSave.setOnClickListener(new View.OnClickListener() {
+
+/*        ibtnSave.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
 
@@ -71,7 +98,7 @@ public class AddGroup extends AppCompatActivity {
                 Intent NavigationActivityIntent = new Intent(AddGroup.this, NavigationActivity.class);
                 AddGroup.this.startActivity(NavigationActivityIntent);
             }
-        });
+        });*/
 
     }
 
@@ -99,13 +126,122 @@ public class AddGroup extends AppCompatActivity {
         return uniqueID;
     }
 
-
     /***********************************************************************************************
      * METHOD TO CREATE NEW GROUP BASED ON DATA FROM FIELDS
      **********************************************************************************************/
+    public void createGroupInFirestore(View view){
+
+        //----------------------------------------------------------------------------------
+        //CREATE GROUP ENTRY WITH DEFAULT DATA OF OWNER
+        //----------------------------------------------------------------------------------
+
+        //Set Reference to the required path
+        mCollectionRef = FirebaseFirestore.getInstance().collection("groups");
+        mFirestoreRef = FirebaseFirestore.getInstance();
+
+        // SETTING UP THE DEFAULT GROUP VARIABLES
+        String mGroupID = mFirestoreRef.collection("groups").document().getId();
+        Log.d(TAG, "The Group Id is: " + mGroupID);
+
+        //String mGroupID = "id_to_be_deleted";
+        EditText etGroupName = (EditText) findViewById(R.id.etGroupName);
+        String mGroupName = etGroupName.getText().toString();
+        String mGroupOwner = userID;
+        int mTaskCount = 0;
+        //Generated random Integer based on timestamp and user hash value
+        int mItemId = generateUniqueItemID();
+
+        //Create Hashmap for default Member Data Objects and add default owner data
+        //TODO: Replace hardcoded username with actual username from Firebase Auth
+        HashMap<String, MemberData> membersHashMap = new HashMap<>();
+        MemberData memberDataGroupOwner = new MemberData(userID, "Lars B.", "owner");
+        membersHashMap.put(memberDataGroupOwner.getId() , memberDataGroupOwner);
+
+        //initialize and set new "group" object to be added to the dataset
+        GroupData groupData = new GroupData(mGroupID, membersHashMap, mGroupName, mGroupOwner, mItemId, mTaskCount);
+
+        //If groupname field is filled, store dataset in the Database
+        if (mGroupName.isEmpty()) {
+            Toast.makeText(AddGroup.this, "please type in a groupname", Toast.LENGTH_LONG).show();
+        }else {
+            //call add method on collection to put data into firestore with a autogenerated ID (specifying "this" in OnSuccessListener will enable automatic deactivation of listener when activity is not active)
+
+            mFirestoreRef.document("groups/" + mGroupID)
+                    .set(groupData).addOnSuccessListener(this, new OnSuccessListener<Void>() {
+                @Override
+                public void onSuccess(Void aVoid) {
+                    Log.d(TAG, "DocumentSnapshot successfully written!");
+                }
+            }).addOnFailureListener(this, new OnFailureListener() {
+                @Override
+                public void onFailure(@NonNull Exception e) {
+                    Log.w(TAG, "Error writing document", e);
+                }
+            });
+
+            Log.d("GroupData", "ItemID is: " + mItemId);
+        }
+
+        //----------------------------------------------------------------------------------
+        //ADD MEMBERSHIP OF GROUP INTO USER SPECIFIC USERDATA OBJECT IN DATABASE
+        //----------------------------------------------------------------------------------
+
+        //Create new GroupMemberShip Object
+        String mGroupMemberShipID = groupData.getId();
+        String mGroupMemberShipCategory = "owner";
+        GroupMemberShip groupMemberShip = new GroupMemberShip(mGroupMemberShipID, mGroupMemberShipCategory);
+
+        //set DB reference to user specific entry and set Value of group ID into the child location
+        mFirestoreRef.document("users/" + userID + "/memberships/" + mGroupID)
+                .set(groupMemberShip).addOnSuccessListener(this, new OnSuccessListener<Void>() {
+            @Override
+            public void onSuccess(Void aVoid) {
+                Log.d(TAG, "Usermembership DocumentSnapshot successfully written!");
+            }
+        }).addOnFailureListener(this, new OnFailureListener() {
+            @Override
+            public void onFailure(@NonNull Exception e) {
+                Log.w(TAG, "Error writing Usermembership document", e);
+            }
+        });
+    }
+
+    public void loadData (View view){
+
+        //set reference for the document to be fetched
+        mDocumentRef = FirebaseFirestore.getInstance().document("groups/uniquekey1234");
+        //fetch document by calling the "get()" method
+        mDocumentRef.get().addOnSuccessListener(this, new OnSuccessListener<DocumentSnapshot>() {
+            @Override
+            public void onSuccess(DocumentSnapshot documentSnapshot) {
+                if (documentSnapshot.exists()){
+                    String id = documentSnapshot.getString(ID_KEY);
+                    String name = documentSnapshot.getString(GROUPNAME_KEY);
+
+                    //USE THESE METHODS TO FETCH THE DATA IN AN OBJECT FORMAT
+
+                    //Map<String, Object> groupData = documentSnapshot.getData();
+                    //GroupData groupDataObject = documentSnapshot.toObject(GroupData.class);
+
+                    tvGroupID.setText(id + " " + name);
+                }
+            }
+        }).addOnFailureListener(this, new OnFailureListener() {
+            @Override
+            public void onFailure(@NonNull Exception e) {
+                Log.d(TAG, "Error", e.getCause());
+            }
+        });
+    }
+
+
+    /***********************************************************************************************
+     * METHOD TO CREATE NEW GROUP BASED ON DATA FROM FIELDS
+     * ToDo: DELETE THIS METHOD IF FIREBASE WILL BE REPLACED BY FIRESTORE
+     **********************************************************************************************/
     public void createGroup(){
 
-        // Initialize the Firebase Database instance
+        /*// Initialize the Firebase Database instance
         FirebaseDatabase database;
         database = FirebaseHelper.getDatabase();
 
@@ -123,7 +259,7 @@ public class AddGroup extends AppCompatActivity {
         //Generated random Integer based on timestamp and user hash value
         int mItemId = generateUniqueItemID();
 
-        //Create Hashmap for default Member Data Objects and add defaul owner data
+        //Create Hashmap for default Member Data Objects and add default owner data
         HashMap<String, MemberData> membersHashMap = new HashMap<>();
         MemberData memberDataGroupOwner = new MemberData(userID, "Lars B.", "owner");
         membersHashMap.put(memberDataGroupOwner.getId() , memberDataGroupOwner);
@@ -148,7 +284,35 @@ public class AddGroup extends AppCompatActivity {
         GroupMemberShip groupMemberShip = new GroupMemberShip(mGroupMemberShipID, mGroupMemberShipCategory);
 
         //set DB reference to user specific entry and set Value of group ID into the child location
-        dbRef.child("userdata").child(userID).child("groupmemberships").child(mGroupMemberShipID).setValue(groupMemberShip);
+        dbRef.child("userdata").child(userID).child("groupmemberships").child(mGroupMemberShipID).setValue(groupMemberShip);*/
     }
 
+    @Override
+    protected void onStart() {
+        super.onStart();
+
+        /***********************************************************************************************
+         * THIS CODE CAN BE USED FOR THE MENU (GROUP) BUILDER IN THE MAIN ACTIVITY CLASS
+         **********************************************************************************************/
+
+        //set reference for the document to be fetched
+        mDocumentRef = FirebaseFirestore.getInstance().document("groups/uniquekey1234");
+        mDocumentRef.addSnapshotListener(this, new EventListener<DocumentSnapshot>() {
+            @Override
+            public void onEvent(@Nullable DocumentSnapshot documentSnapshot, @Nullable FirebaseFirestoreException e) {
+
+                if (documentSnapshot.exists()){
+                    String id = documentSnapshot.getString(ID_KEY);
+                    String name = documentSnapshot.getString(GROUPNAME_KEY);
+
+                    //USE THESE METHODS TO FETCH THE DATA IN AN OBJECT FORMAT
+
+                    //Map<String, Object> groupData = documentSnapshot.getData();
+                    //GroupData groupDataObject = documentSnapshot.toObject(GroupData.class);
+
+                    tvGroupID.setText(id + " " + name);
+                }
+            }
+        });
+    }
 }

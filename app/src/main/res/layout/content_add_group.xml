@@ -32,6 +32,19 @@
             tools:layout_editor_absoluteX="16dp"
             tools:layout_editor_absoluteY="42dp" />
 
+        <TextView
+            android:id="@+id/textView4"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="TextView" />
+
+        <Button
+            android:id="@+id/button2"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:onClick="loadData"
+            android:text="Load data" />
+
         <Button
             android:id="@+id/btnAddMember"
             android:layout_width="wrap_content"
