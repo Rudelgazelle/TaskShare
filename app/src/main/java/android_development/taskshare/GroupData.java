@@ -1,5 +1,7 @@
 package android_development.taskshare;
 
+import com.google.firebase.firestore.Exclude;
+
 import java.util.List;
 import java.util.Map;
 
@@ -27,6 +29,8 @@ public class GroupData {
         this.taskCount = taskCount;
     }
 
+    //Call exclude to not get redundant ID data in the Firestore, since the document has already the ID in the name.
+    @Exclude
     public String getId() {
         return id;
     }

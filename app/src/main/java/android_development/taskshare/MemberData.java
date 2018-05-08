@@ -1,5 +1,7 @@
 package android_development.taskshare;
 
+import com.google.firebase.firestore.Exclude;
+
 public class MemberData {
 
     private String id;

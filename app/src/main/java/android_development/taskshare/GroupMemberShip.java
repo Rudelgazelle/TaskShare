@@ -1,5 +1,7 @@
 package android_development.taskshare;
 
+import com.google.firebase.firestore.Exclude;
+
 public class GroupMemberShip {
 
     private String groupId;
@@ -14,6 +16,8 @@ public class GroupMemberShip {
         this.category = category;
     }
 
+    //Call exclude to not get redundant ID data in the Firestore, since the document has already the ID in the name.
+    @Exclude
     public String getGroupId() {
         return groupId;
     }

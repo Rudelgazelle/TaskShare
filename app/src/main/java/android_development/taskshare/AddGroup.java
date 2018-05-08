@@ -27,6 +27,7 @@ import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.EventListener;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.FirebaseFirestoreException;
+import com.google.firebase.firestore.SetOptions;
 
 import org.w3c.dom.Document;
 
@@ -49,7 +50,10 @@ public class AddGroup extends AppCompatActivity {
 
     private FirebaseFirestore mFirestoreRef;
     private DocumentReference mDocumentRef;
+    private DocumentReference mMembershipDocRef;
     private CollectionReference mCollectionRef;
+
+    private CollectionReference mMembershipCollectionRef;
 
     private TextView tvGroupID;
 
@@ -188,17 +192,17 @@ public class AddGroup extends AppCompatActivity {
 
         //Create new GroupMemberShip Object
         String mGroupMemberShipID = groupData.getId();
-        String mGroupMemberShipCategory = "owner";
+        String mGroupMemberShipCategory = "member";
         GroupMemberShip groupMemberShip = new GroupMemberShip(mGroupMemberShipID, mGroupMemberShipCategory);
 
-        //set DB reference to user specific entry and set Value of group ID into the child location
-        mFirestoreRef.document("users/" + userID + "/memberships/" + mGroupID)
-                .set(groupMemberShip).addOnSuccessListener(this, new OnSuccessListener<Void>() {
+        mMembershipDocRef = mFirestoreRef.document("users/" + userID + "/memberships/" + mGroupID);
+
+        mMembershipDocRef.set(groupMemberShip).addOnSuccessListener(new OnSuccessListener<Void>() {
             @Override
             public void onSuccess(Void aVoid) {
                 Log.d(TAG, "Usermembership DocumentSnapshot successfully written!");
             }
-        }).addOnFailureListener(this, new OnFailureListener() {
+        }).addOnFailureListener(new OnFailureListener() {
             @Override
             public void onFailure(@NonNull Exception e) {
                 Log.w(TAG, "Error writing Usermembership document", e);
@@ -293,14 +297,24 @@ public class AddGroup extends AppCompatActivity {
 
         /***********************************************************************************************
          * THIS CODE CAN BE USED FOR THE MENU (GROUP) BUILDER IN THE MAIN ACTIVITY CLASS
+         *
+         * //USE A COLLECTION REFERENCE TO QUERY FOR MULTIPLE GROUPS INSTEAD!!!!!!!!!!!!!
          **********************************************************************************************/
 
         //set reference for the document to be fetched
         mDocumentRef = FirebaseFirestore.getInstance().document("groups/uniquekey1234");
+        //set Snapshotlistener to document reference (specifying "this" in OnSuccessListener will enable automatic deactivation of listener when activity is not active)
         mDocumentRef.addSnapshotListener(this, new EventListener<DocumentSnapshot>() {
             @Override
             public void onEvent(@Nullable DocumentSnapshot documentSnapshot, @Nullable FirebaseFirestoreException e) {
 
+                //IF there is an error, show toast and log message
+                if (e != null){
+                    Toast.makeText(AddGroup.this, "Error while loading!", Toast.LENGTH_SHORT).show();
+                    Log.d(TAG, e.toString());
+                    //leave this method if there was an exception
+                    return;
+                }
                 if (documentSnapshot.exists()){
                     String id = documentSnapshot.getString(ID_KEY);
                     String name = documentSnapshot.getString(GROUPNAME_KEY);
