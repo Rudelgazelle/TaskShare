@@ -26,20 +26,12 @@ import android.widget.Toast;
 
 import com.bumptech.glide.Glide;
 import com.firebase.ui.storage.images.FirebaseImageLoader;
-import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
-import com.google.android.gms.tasks.Task;
-import com.google.firebase.FirebaseApp;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.database.ChildEventListener;
-import com.google.firebase.database.DataSnapshot;
-import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.Query;
-import com.google.firebase.database.ValueEventListener;
 import com.google.firebase.firestore.CollectionReference;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
@@ -86,7 +78,6 @@ public class NavigationActivity extends AppCompatActivity
     public FirebaseAuth mAuth;
     public FirebaseUser currentUser = null;
     public FirebaseAuth.AuthStateListener mAuthstateListener;
-    public FirebaseAuth.AuthStateListener authStateListener;
 
     //Define TAG variable for output messages during debug
     private static final String TAG = "EmailPassword";
@@ -112,7 +103,7 @@ public class NavigationActivity extends AppCompatActivity
     Boolean mActionSettingsAreToggled;
 
     int groupID;
-    String mGroupIDforFragment;
+    String mGroupIDforPutExtra;
     int itemID;
     int itemOrder = 0;
     String itemTitle;
@@ -124,7 +115,7 @@ public class NavigationActivity extends AppCompatActivity
     public Map<String, GroupData> groupHashMap = new HashMap<String, GroupData>();
     public Map<String, MemberData> memberHashMap = new HashMap<String, MemberData>();
     private List<String> mGroupMembershipList;
-    private List<GroupData> menuGroupItemList;
+    public List<GroupData> menuGroupItemList;
     private Integer taskDataListAllSize;
     private Integer taskDataListFavoriteSize;
     private Integer taskDataListOverdueSize;
@@ -301,7 +292,7 @@ public class NavigationActivity extends AppCompatActivity
                 //Start the addGroupTask Activity upon click
                 Intent addGroupTaskActivityIntent = new Intent(NavigationActivity.this, AddGroupTaskActivity.class);
                 addGroupTaskActivityIntent.putExtra("userID", userID);
-                addGroupTaskActivityIntent.putExtra("dbRef", dbRef.toString());
+                addGroupTaskActivityIntent.putExtra("groupID", mGroupIDforPutExtra);
                 NavigationActivity.this.startActivity(addGroupTaskActivityIntent);
             }
         });
@@ -330,7 +321,8 @@ public class NavigationActivity extends AppCompatActivity
         int id = item.getItemId();
 
         //noinspection SimplifiableIfStatement
-        if (id == R.id.action_settings) {
+        if (id == R.id.nav_allTasks) {
+            finish();
             return true;
         }
 
@@ -417,18 +409,17 @@ public class NavigationActivity extends AppCompatActivity
     @Override
     protected void onStart() {
         super.onStart();
-        // Check if user is signed in (non-null) and update UI accordingly.
+
+        //ATTACH AUTH STATE LISTENER ON START OF THE APP
         mAuth.addAuthStateListener(mAuthstateListener);
 
-
         /***********************************************************************************************
-         * JUST FOR TESTING PURPOSES
-         * TODO: REMOVE AFTER TEST
+         * LOAD THE MENU WITH GROUP DATA IF THE USER IS NOT NULL
          **********************************************************************************************/
         if (userID == null){
             Log.d(USER_AUTH_TAG, "Error, user is null!");
         }else {
-            loadMemberships();
+            loadUserGroupMenu();
         }
     }
 
@@ -515,11 +506,19 @@ public class NavigationActivity extends AppCompatActivity
 
     /***********************************************************************************************
      * THIS METHOD RETRIEVES ALL MEMBERSHIPS DATA FROM THE DATABASE BASED ON THE CURRENT USER ID
+     * AND CREATES MENU ITEMS WITH GROUPS ACCORDINGLY
      **********************************************************************************************/
-    public void loadMemberships(){
+    public void loadUserGroupMenu(){
 
-        Log.d(FIRESTORE_TAG, "Fetch method has been executed");
+        // DELETES THE SHARED GROUPS FROM MENU SO THEY WILL NOT BE ADDED MULTIPLE TIMES ON REFRESH
+        menu.findItem (R.id.submenu_groups).getSubMenu().removeGroup(R.id.groups);
 
+        //Create new arraylist
+        menuGroupItemList = new ArrayList<>();
+
+    /***********************************************************************************************
+     * THIS METHOD RETRIEVES ALL MEMBERSHIPS DATA FROM THE DATABASE BASED ON THE CURRENT USER ID
+     **********************************************************************************************/
         membershipCollectionRef = db.collection("users").document("acSIBra6pUcemLPBlHFnZLNuchy2").collection("memberships");
         membershipCollectionRef.addSnapshotListener(this, new EventListener<QuerySnapshot>() {
             @Override
@@ -536,161 +535,104 @@ public class NavigationActivity extends AppCompatActivity
                         //add id of group Dokument and post it into array list.
                         mGroupMembershipList.add(queryDocumentSnapshot.getId());
                     }
-                }
 
-                //ITERATE OVER THE ARRAY AND SETUP QUERIES TO FIRESTORE ACCORDINGLY
-                for (String groupId : mGroupMembershipList) {
-                    Log.d("ArrayTest", "Array: " + groupId);
+                    /*********************************************************************************************************************
+                     * THIS PART OF THE METHOD FATCHES GROUP DATA BASED ON THE "mGroupMembershipList" AND CREATES MENU ITEMS ACCORDINGLY *
+                     *********************************************************************************************************************/
+                    //ITERATE OVER THE ARRAY AND SETUP QUERIES TO FIRESTORE ACCORDINGLY
+                    for (String groupId : mGroupMembershipList) {
+                        Log.d("ArrayTest", "Array: " + groupId);
 
-                    groupDocRef = db.collection("groups").document(groupId);
-                    groupDocRef
-                            .get()
-                            .addOnSuccessListener(new OnSuccessListener<DocumentSnapshot>() {
-                                @Override
-                                public void onSuccess(DocumentSnapshot documentSnapshot) {
-                                    GroupData groupData = documentSnapshot.toObject(GroupData.class);
+                        groupDocRef = db.collection("groups").document(groupId);
+                        groupDocRef
+                                .get()
+                                .addOnSuccessListener(new OnSuccessListener<DocumentSnapshot>() {
+                                    @Override
+                                    public void onSuccess(DocumentSnapshot documentSnapshot) {
+                                        GroupData groupData = documentSnapshot.toObject(GroupData.class);
 
-                                    //This sets the document id as the group id to not store the data redundantly in a document field
-                                    groupData.setId(documentSnapshot.getId());
+                                        //This sets the document id as the group id to not store the data redundantly in a document field
+                                        groupData.setId(documentSnapshot.getId());
 
-                                    /***********************************************************************************************
-                                     * BUILD THE MENU OUT OF THE FETCHED ITEM
-                                     **********************************************************************************************/
+                                        /***********************************************************************************************
+                                         * BUILD THE MENU OUT OF THE FETCHED ITEM
+                                         **********************************************************************************************/
 
-                                    //Create new arraylist
-                                    menuGroupItemList = new ArrayList<>();
+                                        //add the retrived object to Arraylist
+                                        menuGroupItemList.add(groupData);
 
-                                    //add the retrived object to Arraylist
-                                    menuGroupItemList.add(groupData);
+                                        //set groupid to the Group for GroupTasks defined in "activity_navigation_drawer"
+                                        groupID = R.id.groups;
+                                        //generate Item identifier and set as ItemID
 
-                                    //set groupid to the Group for GroupTasks defined in "activity_navigation_drawer"
-                                    groupID = R.id.groups;
-                                    //generate Item identifier and set as ItemID
+                                        //set variables for submenu item
+                                        itemID = groupData.getItemId();
+                                        //itemID = View.generateViewId();
+                                        //set the order to NONE
+                                        itemOrder = Menu.NONE;
 
-                                    //set variables for submenu item
-                                    itemID = groupData.getItemId();
-                                    //itemID = View.generateViewId();
-                                    //set the order to NONE
-                                    itemOrder = Menu.NONE;
-
-                                    String groupName = groupData.getName();
-                                    int taskCount = groupData.getTaskCount();
-                                    itemTitle = groupName + " (" + taskCount + ")";
+                                        String groupName = groupData.getName();
+                                        int taskCount = groupData.getTaskCount();
+                                        itemTitle = groupName + " (" + taskCount + ")";
 
 
-                                    //Add menu items under the "Groups" Submenu and add a menuitemclicklistener
-                                    menuItem = menu.findItem(R.id.submenu_groups).getSubMenu().add(groupID, itemID, itemOrder, itemTitle).setIcon(R.drawable.ic_menu_share)
-                                            .setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
-                                                @Override
+                                        //Add menu items under the "Groups" Submenu and add a menuitemclicklistener
+                                        menuItem = menu.findItem(R.id.submenu_groups).getSubMenu().add(groupID, itemID, itemOrder, itemTitle).setIcon(R.drawable.ic_menu_share)
+                                                .setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
+                                                    @Override
                                                     public boolean onMenuItemClick(MenuItem itemClicked) {
 
-                                                    //get the item ID of the clicked menu item
-                                                    int mItemIdPicked = itemClicked.getItemId();
-                                                    Log.d("Menu1", "The ID of the clicked item is: " + mItemIdPicked);
+                                                        //get the item ID of the clicked menu item
+                                                        int mItemIdPicked = itemClicked.getItemId();
+                                                        Log.d("Menu1", "The ID of the clicked item is: " + mItemIdPicked);
 
-                                                    // iterate throug the Arraylist and search for an entry with the specific itemID as value of itemID field
-                                                    for (GroupData groupData : menuGroupItemList) {
-                                                        int itemID = groupData.getItemId();
-                                                        //Log.d("Menu", "mID: " + groupData.getId());
+                                                        // iterate throug the Arraylist and search for an entry with the specific itemID as value of itemID field
+                                                        for (GroupData groupData : menuGroupItemList) {
+                                                            int itemID = groupData.getItemId();
+                                                            //Log.d("Menu", "mID: " + groupData.getId());
 
-                                                        if (mItemIdPicked == itemID){
-                                                            Log.d("Menu2", "The ID of the group is: " + itemID);
-                                                            mGroupIDforFragment = String.valueOf(itemID);
+                                                            if (mItemIdPicked == itemID){
+                                                                Log.d("Menu2", "The ID of the group is: " + itemID);
+                                                                //Pass group ID to mSelectedGroupID to be used in other activities/Fragments.
+                                                                mGroupIDforPutExtra = groupData.getId();
+                                                            }
                                                         }
+
+                                                        //Put the Activity title based on the Group name listed in the menus item title
+                                                        activityTitle = itemClicked.getTitle().toString();
+                                                        //Set the title of the activity
+                                                        getSupportActionBar().setTitle(activityTitle);
+
+                                                        //Open Fragment and parse the required itemID for the query of groups
+                                                        Fragment_NavMenu_GroupTasks fragment = new Fragment_NavMenu_GroupTasks();
+                                                        FragmentTransaction fragmentTransaction = getSupportFragmentManager().beginTransaction();
+                                                        fragmentTransaction.replace(R.id.content_main_navigation, fragment);
+                                                        fragmentTransaction.addToBackStack(null);
+                                                        fragmentTransaction.commit();
+
+                                                        //Make the AddGroupTask Button Visible
+                                                        //TODO: THERE COULD BE A NICE TRANSITION ANIMATION OF THE TWO BUTTONS
+
+                                                        fabAddGroupTask.setVisibility(View.VISIBLE);
+
+                                                        //TODO: PUTEXTRA METHOD WITH PARSING THE GroupID to be used in the opened GroupActivity
+
+
+                                                        return false;
                                                     }
-
-                                                    //Put the Activity title based on the Group name listed in the menus item title
-                                                    activityTitle = itemClicked.getTitle().toString();
-                                                    //Set the title of the activity
-                                                    getSupportActionBar().setTitle(activityTitle);
-
-                                                    //Open Fragment and parse the required itemID for the query of groups
-                                                    Fragment_NavMenu_GroupTasks fragment = new Fragment_NavMenu_GroupTasks();
-                                                    FragmentTransaction fragmentTransaction = getSupportFragmentManager().beginTransaction();
-                                                    fragmentTransaction.add(R.id.content_main_navigation, fragment);
-                                                    fragmentTransaction.commit();
-
-                                                    //Make the AddGroupTask Button Visible
-                                                    //TODO: THERE COULD BE A NICE TRANSITION ANIMATION OF THE TWO BUTTONS
-
-                                                    fabAddGroupTask.setVisibility(View.VISIBLE);
-
-                                                    //TODO: PUTEXTRA METHOD WITH PARSING THE GroupID to be used in the opened GroupActivity
-
-
-                                                    return false;
-                                                }
-                                            });
-                                }
-                            })
-                            .addOnFailureListener(new OnFailureListener() {
-                                @Override
-                                public void onFailure(@NonNull Exception e) {
-                                    Log.d(FIRESTORE_TAG, "Error retieving group data: " + e.toString());
-                                }
-                            });
-                }
-            }
-        });
-    }
-
-    /***********************************************************************************************
-     * THIS METHOD RETRIEVES ALL GROUP DATA FROM THE DATABASE BASED ON THE USERS MEMBERSHIP
-     **********************************************************************************************/
-    public void loadGroupData(){
-
-        //THE ORDER BY METHOD CAN ONLY BE EXECUTED ON THE SAME FIELD AS THE WHERE STATEMENT!!!!!!!!
-        groupRef.whereEqualTo("owner", "useridxxyx")
-                .whereEqualTo("groupId", "groupidxyxy")
-                //The first order by has to match the first where statement field
-                .orderBy("owner", com.google.firebase.firestore.Query.Direction.DESCENDING)
-                .orderBy("taskCount", com.google.firebase.firestore.Query.Direction.DESCENDING)
-                .get()
-                .addOnSuccessListener(this, new OnSuccessListener<QuerySnapshot>() {
-                    @Override
-                    public void onSuccess(QuerySnapshot queryDocumentSnapshots) {
-
-                        //Iterate trough the documentsnapshot and retrieve the group objects (no need to check if the QueryDocumentSnapshot exists, because it always exists)
-                        for (QueryDocumentSnapshot documentSnapshot : queryDocumentSnapshots){
-
-                            GroupData group = documentSnapshot.toObject(GroupData.class);
-                            //This sets the document id as the group id to not store the data redundantly in a document field
-                            group.setId(documentSnapshot.getId());
-
-                            //build the menu out of the fetched objects
-
-
-                        }
-                    }
-                })
-                .addOnFailureListener(new OnFailureListener() {
-                    @Override
-                    public void onFailure(@NonNull Exception e) {
-                        Log.d(FIRESTORE_TAG, e.toString());
-                    }
-                });
-
-        /***********************************************************************************************
-         * TODO: ADD THIS TO THE "ON START" METHOD
-         **********************************************************************************************/
-        groupRef.addSnapshotListener(this, new EventListener<QuerySnapshot>() {
-            @Override
-            public void onEvent(@Nullable QuerySnapshot queryDocumentSnapshots, @Nullable FirebaseFirestoreException e) {
-
-                //check if there is an error
-                if (e != null){
-                    Toast.makeText(NavigationActivity.this, "Error loading groups!", Toast.LENGTH_SHORT).show();
-                    Log.d(FIRESTORE_TAG, e.toString());
-                    //Important to step out of this method if there is an error, to not run into an app crash
-                    return;
-                }else {
-                    //Iterate trough the documentsnapshot and retrieve the group objects (no need to check if the QueryDocumentSnapshot exists, because it always exists)
-                    for(QueryDocumentSnapshot documentSnapshot : queryDocumentSnapshots){
-                        GroupData group = documentSnapshot.toObject(GroupData.class);
-                        //This sets the document id as the group id to not store the data redundantly in a document field
-                        group.setId(documentSnapshot.getId());
+                                                });
+                                    }
+                                })
+                                .addOnFailureListener(new OnFailureListener() {
+                                    @Override
+                                    public void onFailure(@NonNull Exception e) {
+                                        Log.d(FIRESTORE_TAG, "Error retieving group data: " + e.toString());
+                                    }
+                                });
                     }
                 }
+
+
             }
         });
     }

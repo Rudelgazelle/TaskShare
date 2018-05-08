@@ -1,9 +1,8 @@
 package android_development.taskshare;
 
-import android.content.Context;
-import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -16,6 +15,8 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.SearchView;
 
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DataSnapshot;
@@ -24,9 +25,19 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.Query;
 import com.google.firebase.database.ValueEventListener;
+import com.google.firebase.firestore.CollectionReference;
+import com.google.firebase.firestore.DocumentChange;
+import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.EventListener;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.FirebaseFirestoreException;
+import com.google.firebase.firestore.QuerySnapshot;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
+
+import javax.annotation.Nullable;
 
 
 /**
@@ -37,12 +48,13 @@ import java.util.List;
  */
 public class Fragment_NavMenu_GroupTasks extends Fragment {
 
+    public static final String GROUP_TASK_FRAGMENT_TAG = "GroupTaskFragment";
     private OnFragmentInteractionListener mListener;
 
     //Initialize FirebaseAuth instance
     public String userID;
-
     public String mGroupID;
+    public int mItemId;
 
     public FirebaseAuth mAuth;
     FirebaseUser currentUser = null;
@@ -52,6 +64,10 @@ public class Fragment_NavMenu_GroupTasks extends Fragment {
     RecyclerView recyclerViewTaskData;
     TaskDataViewAdapter adapter;
     List<TaskData> taskDataListItems;
+
+    //Initialize FireStore References
+    FirebaseFirestore db = FirebaseFirestore.getInstance();
+    CollectionReference groupTaskCollectionRef;
 
     public Fragment_NavMenu_GroupTasks() {
         // Required empty public constructor
@@ -66,67 +82,30 @@ public class Fragment_NavMenu_GroupTasks extends Fragment {
         //return inflater.inflate(R.layout.fragment_nav_menu_group_tasks, container, false);
 
         //retrieve the userID and Group IF from NavigationActivity
-        retrieveUserIDandGroupID();
-
-        //TODO: ERROR, THIS DOES NOT GET EXECUTED?!!!?!?!!
-        Log.d("Fragment", "The ID of the group: " + mGroupID);
-
-        //Initiate the RecyclerView object //map the Recyclerview object to the xml RecyclerView
-        recyclerViewTaskData = (RecyclerView) view.findViewById(R.id.recyclerViewTaskData);
+        retrieveDataFromNavigationActivity();
 
         /***********************************************************************************************
          * Initialize the Arraylist, adapter and set the adapter to the recycleView
          **********************************************************************************************/
+        // Create a new instance of a ArrayList; Initialize the above defined listitem object
+        taskDataListItems = new ArrayList<>();
+        //Initiate the RecyclerView object //map the Recyclerview object to the xml RecyclerView
+        // Instanciate a new adapter for the Recycleview and parse the "listitem" and "Context"
+        adapter = new TaskDataViewAdapter(taskDataListItems, getContext());
 
+        recyclerViewTaskData = (RecyclerView) view.findViewById(R.id.recyclerViewTaskData);
         //Every item of the recyclerview will have a fixed size
         recyclerViewTaskData.setHasFixedSize(true);
         recyclerViewTaskData.setLayoutManager(new LinearLayoutManager(getContext()));
-
-        // Create a new instance of a ArrayList; Initialize the above defined listitem object
-        taskDataListItems = new ArrayList<>();
-        // Instanciate a new adapter for the Recycleview and parse the "listitem" and "Context"
-        adapter = new TaskDataViewAdapter(taskDataListItems, getContext());
         //set the adapter to the recyclerview
         recyclerViewTaskData.setAdapter(adapter);
 
-        // set the database reference to the correct child object (TaskData)
-        //Initialize Firebase objects
-        FirebaseDatabase database = FirebaseHelper.getDatabase();
-        DatabaseReference dbRef = database.getReference();
 
-        dbRef = dbRef.child("groupdata").child(mGroupID);
-        Query query = dbRef.orderByChild("datecreated");
+        /***********************************************************************************************
+         * SET COLLECTION REFERENCE
+         **********************************************************************************************/
+        groupTaskCollectionRef = db.collection("groups").document(mGroupID).collection("grouptasks");
 
-        //set a ValueEventlistener to the database reference that listens if changes are being made to the data
-        query.addValueEventListener(new ValueEventListener() {
-            @Override
-            public void onDataChange(DataSnapshot dataSnapshot) {
-
-                //delete all items from the list
-                taskDataListItems.clear(); //TODO: implement funtion that only single dataset is changed if necessary
-
-                //returns a collection of the children under the set database reference
-                Iterable<DataSnapshot> children = dataSnapshot.getChildren();
-
-                // Shake hands with each of the collected childrens
-                //Iterate over the collection of "children" specified above and put it into a variable called "child"
-                for (DataSnapshot child : children ) {
-                    //child.getValue(TravelExpenseData.class); "VOR STRG + ALT +V"
-                    TaskData taskData = child.getValue(TaskData.class);
-
-                    //add the retrieved data to the ArrayList if it fits the requirements
-                    taskDataListItems.add(taskData);
-                }
-
-                // notify the adapter that data has been changed and needs to be refreshed
-                adapter.notifyDataSetChanged();
-            }
-
-            @Override
-            public void onCancelled(DatabaseError databaseError) {
-
-            }
-        });
 
         // Inflate the layout for this fragment
         return view;
@@ -137,6 +116,102 @@ public class Fragment_NavMenu_GroupTasks extends Fragment {
         if (mListener != null) {
             mListener.onFragmentInteraction(uri);
         }
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+
+        //CLEAR THE LIST, AS THERE WOULD BE A DUBLICATION OF DATA IF THE METHOD WOULD BE CALLED AGAIN, E.G AFTER A WAKEUP OF THE DEVICE
+        taskDataListItems.clear();
+
+        /***********************************************************************************************
+         * SET COLLECTION REFERENCE LISTENER TO GROUPTASKDATA, TO LISTEN TO CHANGES IN THE DATACOLLECTION
+         **********************************************************************************************/
+        groupTaskCollectionRef.addSnapshotListener(getActivity(), new EventListener<QuerySnapshot>() {
+            @Override
+            public void onEvent(@Nullable QuerySnapshot queryDocumentSnapshots, @Nullable FirebaseFirestoreException e) {
+
+                //Check if there is an error
+                if (e != null) {
+                    Log.d(Fragment_NavMenu_GroupTasks.GROUP_TASK_FRAGMENT_TAG, "Error!" + e.getMessage());
+                }
+
+                // Iterate through the QueryDocumentSnapshot
+                for (DocumentChange documentChange : queryDocumentSnapshots.getDocumentChanges()) {
+
+                    //TODO: THIS COULD BETTER BE HANDLD IN A CASE INSTEAD OF IF STATEMENTS!!!!!!!!!!!!!!!
+                    //IF A NEW DOCUMENT IS ADDED, EXECUTE THIS CODE
+                    if (documentChange.getType() == DocumentChange.Type.ADDED) {
+
+                        Log.d(GROUP_TASK_FRAGMENT_TAG, "ADDED is triggered");
+
+                        //retrieve data as a TaskData object
+                        TaskData taskData = documentChange.getDocument().toObject(TaskData.class);
+                        //ad the Id to the taskdata object, that has not been stored as fieldvalue
+                        taskData.setId(documentChange.getDocument().getId());
+                        //add the retrived object to Arraylist
+                        taskDataListItems.add(taskData);
+
+                        // After every object from the QueryDocumentSnapshot has been retrieved, notify the Adapter, that the dataset has changed
+                        adapter.notifyDataSetChanged();
+                    } else {
+
+                        //IF AN EXISTING DOCUMENT IS MODIFIED, EXECUTE THIS CODE
+                        if (documentChange.getType() == DocumentChange.Type.MODIFIED) {
+
+                            Log.d(GROUP_TASK_FRAGMENT_TAG, "MODIFIED is triggered");
+
+                            int mListIndex = 0;
+                            TaskData taskDataUpdated = documentChange.getDocument().toObject(TaskData.class);
+                            //ad the Id to the taskdata object, that has not been stored as fieldvalue
+                            taskDataUpdated.setId(documentChange.getDocument().getId());
+
+                            for (TaskData taskData : taskDataListItems) {
+                                // retrive the id of the task that has been changed
+                                String mTaskID = taskData.getId();
+
+                                Log.d(GROUP_TASK_FRAGMENT_TAG, "mID: " + mTaskID);
+
+                                if (mTaskID.equals(taskDataUpdated.getId())){
+                                    Log.d(GROUP_TASK_FRAGMENT_TAG, "ID MATCH!");
+                                    //IF the correct id is found in the Data snapshot, change the respective object in the array list
+                                    //set the retrieved data to the existing index item of the ArrayList
+                                    taskDataListItems.set(mListIndex, taskDataUpdated);
+                                }
+
+                                //add +1 to the index value for each iteration
+                                mListIndex ++;
+                            }
+
+                            // After every object from the QueryDocumentSnapshot has been retrieved, notify the Adapter, that the dataset has changed
+                            adapter.notifyDataSetChanged();
+
+                        } else {
+
+                            //IF A DOCUMENT IS DELETED, EXECUTE THIS CODE
+                            if (documentChange.getType() == DocumentChange.Type.REMOVED){
+
+                                //THE DELETE FUNCTION HAS TO USE AN ITERATOR, AS THERE CANNOT BE CALLED AN REMOVE OPTION WHEN LIST IS ITERATED OVER.
+                                String taskIdDelete = documentChange.getDocument().getId();
+                                Log.d(GROUP_TASK_FRAGMENT_TAG, "REMOVED is triggered");
+
+                                for (Iterator<TaskData> iterator = taskDataListItems.iterator(); iterator.hasNext(); ) {
+                                    TaskData taskData = iterator.next();
+                                    if (taskData.getId().equals(taskIdDelete)) {
+                                        iterator.remove();
+                                    }
+                                }
+
+                                // After every object from the QueryDocumentSnapshot has been retrieved, notify the Adapter, that the dataset has changed
+                                adapter.notifyDataSetChanged();
+                            }
+                        }
+
+                    }
+                }
+            }
+        });
     }
 
     @Override
@@ -212,13 +287,15 @@ public class Fragment_NavMenu_GroupTasks extends Fragment {
         }
     }
 
-    public void retrieveUserIDandGroupID(){
+    public void retrieveDataFromNavigationActivity(){
 
         NavigationActivity navigationActivity;
         navigationActivity = (NavigationActivity) getActivity();
 
         //attach public variable to local variable
         userID = navigationActivity.userID;
-        mGroupID = navigationActivity.mGroupIDforFragment;
+        mGroupID = navigationActivity.mGroupIDforPutExtra;
+
+        Log.d(GROUP_TASK_FRAGMENT_TAG, "Group ID is: " + mGroupID);
     }
 }

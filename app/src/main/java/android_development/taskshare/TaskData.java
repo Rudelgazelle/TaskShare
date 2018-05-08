@@ -2,6 +2,8 @@ package android_development.taskshare;
 
 import android.os.AsyncTask;
 
+import com.google.firebase.firestore.Exclude;
+
 import java.util.Date;
 
 /**
@@ -35,7 +37,7 @@ public class TaskData {
         this.favorite = favorite;
     }
 
-
+    @Exclude
     public String getId() {
         return id;
     }

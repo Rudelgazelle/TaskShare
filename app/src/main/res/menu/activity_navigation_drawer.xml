@@ -31,6 +31,8 @@
             android:orderInCategory="0">
             <menu>
                 <group android:id="@+id/groups">
+                </group>
+                <group android:id="@+id/createGroups">
                     <item
                         android:id="@+id/nav_addGroup"
                         android:icon="@drawable/ic_menu_group_add"

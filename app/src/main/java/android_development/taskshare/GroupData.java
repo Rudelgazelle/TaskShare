@@ -12,7 +12,7 @@ public class GroupData {
     private String owner;
     public Map<String, MemberData> members;
     private int itemId;
-    private int taskCount;
+    public int taskCount;
 
     //private List<String> members;
 
