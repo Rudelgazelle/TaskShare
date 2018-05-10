@@ -19,7 +19,9 @@
         android:layout_height="match_parent"
         android:layout_gravity="start"
         app:headerLayout="@layout/nav_header_navigation"
-        app:menu="@menu/activity_navigation_drawer">
+        app:menu="@menu/activity_navigation_drawer"
+        app:theme="@style/NavItemTextAppearance">
+        <!-- THIS (app:theme="@style/NavItemTextAppearance") was added to make sure, that the item titles are not cut off if they are too long -->
 
 
     </android.support.design.widget.NavigationView>

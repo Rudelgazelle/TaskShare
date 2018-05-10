@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="utf-8"?>
+    <android_development.taskshare.RecyclerViewSwipeRevealLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="90dp"
+    android:layout_gravity="center_vertical"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    app:dragFromEdge="right"
+    xmlns:tools="http://schemas.android.com/tools">
+
+
+    <FrameLayout
+        android:id="@+id/framelayout"
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent">
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:gravity="center_vertical|end"
+            android:orientation="horizontal"
+            android:paddingEnd="20dp"
+            android:paddingStart="20dp">
+
+            <ImageButton
+                android:id="@+id/info_button"
+                android:layout_width="50dp"
+                android:layout_height="50dp"
+                android:text="Delete"
+                app:srcCompat="@drawable/ic_action_delete" />
+
+            <ImageButton
+                android:id="@+id/edit_button"
+                android:layout_width="50dp"
+                android:layout_height="50dp"
+                android:text="Share"
+                app:srcCompat="@drawable/ic_menu_share" />
+
+        </LinearLayout>
+    </FrameLayout>
+
+    <FrameLayout
+        android:id="@+id/framelayout2"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:clickable="true">
+
+        <android.support.v7.widget.CardView
+            xmlns:android="http://schemas.android.com/apk/res/android"
+            xmlns:app="http://schemas.android.com/apk/res-auto"
+            android:layout_width="match_parent"
+            android:layout_height="80dp"
+            app:cardElevation="5dp"
+            app:cardCornerRadius="8dp"
+            android:layout_margin="5dp"
+            android:visibility="visible">
+
+            <FrameLayout
+                xmlns:android="http://schemas.android.com/apk/res/android"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:padding="10dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@android:color/white"
+                    android:orientation="horizontal"
+                    android:padding="10dp">
+
+                    <ImageView
+                        android:id="@+id/imageView"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginHorizontal="@dimen/activity_margin_left_right"
+                        app:srcCompat="@android:drawable/ic_menu_share" />
+
+                    <LinearLayout
+                        android:layout_width="250dp"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:id="@+id/content"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:textStyle="bold"
+                            tools:text="This is some temp text" />
+
+                        <TextView
+                            android:id="@+id/tvDateCreated"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:textStyle="normal"
+                            tools:text="This is some temp text" />
+                    </LinearLayout>
+
+                    <ImageView
+                        android:id="@+id/ivDueDateAlarm"
+                        android:layout_width="28dp"
+                        android:layout_height="match_parent"
+                        android:layout_gravity="center|end"
+                        android:scaleType="fitCenter"
+                        app:srcCompat="@android:drawable/ic_lock_idle_alarm"
+                        tools:visibility="invisible" />
+
+                </LinearLayout>
+
+            </FrameLayout>
+
+        </android.support.v7.widget.CardView>
+
+    </FrameLayout>
+
+
+</android_development.taskshare.RecyclerViewSwipeRevealLayout>

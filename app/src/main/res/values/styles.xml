@@ -36,4 +36,9 @@
         <item name="android:background">@drawable/ic_launcher_background</item>
     </style>
 
+    <!-- Additional STYLE FOR NAVIGATION DRAWER ITEMS TO NOT GET CUT OFF -->
+    <style name="NavItemTextAppearance">
+        <item name="android:ellipsize">middle</item>
+    </style>
+
 </resources>

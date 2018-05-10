@@ -9,10 +9,14 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.Filter;
+import android.widget.FrameLayout;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.google.firebase.database.DataSnapshot;
 
@@ -63,7 +67,7 @@ public class TaskDataViewAdapter extends RecyclerView.Adapter<TaskDataViewAdapte
     public TaskDataViewAdapter.TaskDataViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
         //return the viewholder and inflate the ListItem layout
         View v = LayoutInflater.from(parent.getContext())
-                .inflate(R.layout.taskdata_taskview, parent, false);
+                .inflate(R.layout.list_item, parent, false);
         //return a new instance of the ViewHolder
         return new TaskDataViewHolder(v);
     }
@@ -176,7 +180,8 @@ public class TaskDataViewAdapter extends RecyclerView.Adapter<TaskDataViewAdapte
 
         //initialize linear layout and attach OnClickListener to enable item click
         //whenever an Item with the position "position" is clicked, this method is being executed
-        holder.itemView.setOnClickListener(new View.OnClickListener() {
+
+        holder.frameLayout.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
 
@@ -195,6 +200,42 @@ public class TaskDataViewAdapter extends RecyclerView.Adapter<TaskDataViewAdapte
                 context.startActivity(intent);
             }
         });
+
+        holder.btnDeleteItem.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Context context = v.getContext();
+                Toast.makeText(context, "delete clicked", Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        holder.btnFavoriteItem.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Context context = v.getContext();
+                Toast.makeText(context, "favorite clicked", Toast.LENGTH_SHORT).show();
+            }
+        });
+
+/*        holder.itemView.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+
+                //Define variables to be mapped to values of clicked item
+                String taskID = taskDataListItem.getId();
+                String taskDateCreated = df.format(taskDataListItem.getDatecreated());
+                String taskContent = taskDataListItem.getContent();
+
+                //Get application context and initiate intent to open the TaskDetailsActivity
+                Context context = v.getContext();
+                Intent intent = new Intent(context, TaskDataDetailsActivity.class);
+                intent.putExtra("taskID", taskID);
+                intent.putExtra("taskDateCreated", taskDateCreated);
+                intent.putExtra("taskContent", taskContent);
+
+                context.startActivity(intent);
+            }
+        });*/
     }
 
     //returns the number of items covered in the List
@@ -211,15 +252,29 @@ public class TaskDataViewAdapter extends RecyclerView.Adapter<TaskDataViewAdapte
         private TextView tvDateCreated;
         private ImageView ivDueDateAlarm;
         //Define a Linear Layout to enable item click
-        public LinearLayout linearLayout;
+        //public LinearLayout linearLayout;
+
+        //This Framelayout enables to click the item to get to the taskDetals Activity
+        public FrameLayout frameLayout;
+
+        //VIEWS FOR BACKGROUND
+        private ImageButton btnDeleteItem;
+        private ImageButton btnFavoriteItem;
 
 
         public TaskDataViewHolder(final View itemView) {
             super(itemView);
+
+            //VIEW BINDS FOR FOREGROUND
             tvContent = (TextView) itemView.findViewById(R.id.content);
             tvDateCreated = (TextView) itemView.findViewById(R.id.tvDateCreated);
             ivDueDateAlarm = (ImageView) itemView.findViewById(R.id.ivDueDateAlarm);
-            linearLayout = (LinearLayout) itemView.findViewById(R.id.recyclerViewTaskData);
+            //linearLayout = (LinearLayout) itemView.findViewById(R.id.recyclerViewTaskData);
+            frameLayout = (FrameLayout) itemView.findViewById(R.id.framelayoutForeground);
+
+            //VIEW BINDS FOR BACKGROUND
+            btnDeleteItem = (ImageButton) itemView.findViewById(R.id.btnDeleteItem);
+            btnFavoriteItem = (ImageButton) itemView.findViewById(R.id.btnFavoriteItem);
         }
     }
 
@@ -229,7 +284,7 @@ public class TaskDataViewAdapter extends RecyclerView.Adapter<TaskDataViewAdapte
         notifyDataSetChanged();
     }
 
-    public Filter getFilter(){
+/*    public Filter getFilter(){
 
         return new Filter() {
             @Override
@@ -277,5 +332,5 @@ public class TaskDataViewAdapter extends RecyclerView.Adapter<TaskDataViewAdapte
                 notifyDataSetChanged();
             }
         };
-    }
+    }*/
 }

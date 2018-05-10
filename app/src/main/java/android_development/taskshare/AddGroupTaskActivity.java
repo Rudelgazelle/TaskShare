@@ -39,7 +39,7 @@ public class AddGroupTaskActivity extends AppCompatActivity {
 
     public static final String ADD_GROUP_TASK_TAG = "AddGroupTask";
     // FIRESTORE VARIABLES
-    FirebaseFirestore db = FirebaseFirestore.getInstance();
+    FirebaseFirestore db;
     CollectionReference userTasksCollection;
     DocumentReference groupDocRef;
 
@@ -78,6 +78,9 @@ public class AddGroupTaskActivity extends AppCompatActivity {
         setContentView(R.layout.activity_add_group_task);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+
+        //Set Firestore Database
+        db = FirestoreHelper.getDatabase();
 
         //Get UserData from stored object of the PutExtra Method by the NavigationActivity
         userID = getIntent().getStringExtra("userID");
