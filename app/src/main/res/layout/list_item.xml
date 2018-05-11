@@ -24,15 +24,15 @@
 
             <ImageButton
                 android:id="@+id/btnDeleteItem"
-                android:layout_width="50dp"
-                android:layout_height="50dp"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
                 android:text="Delete"
                 app:srcCompat="@drawable/ic_action_delete" />
 
             <ImageButton
                 android:id="@+id/btnFavoriteItem"
-                android:layout_width="50dp"
-                android:layout_height="50dp"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
                 android:text="Share"
                 app:srcCompat="@drawable/ic_task_favorite" />
 
@@ -98,9 +98,11 @@
 
                     <ImageView
                         android:id="@+id/ivDueDateAlarm"
-                        android:layout_width="28dp"
+                        android:layout_width="20dp"
                         android:layout_height="match_parent"
-                        android:layout_gravity="center|end"
+                        android:layout_gravity="center"
+                        android:adjustViewBounds="true"
+                        android:cropToPadding="false"
                         android:scaleType="fitCenter"
                         app:srcCompat="@android:drawable/ic_lock_idle_alarm"
                         tools:visibility="invisible" />

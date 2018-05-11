@@ -45,6 +45,10 @@ public class TaskDataViewAdapter extends RecyclerView.Adapter<TaskDataViewAdapte
     private List<TaskData> mArrayList;
     private Context context;
 
+    private RecyclerViewSwipeRevealLayout recyclerViewSwipeRevealLayout;
+
+    private TaskData taskDataListItem;
+
     DateFormat dateFormat = android.text.format.DateFormat.getDateFormat(context);
     DateFormat df = new SimpleDateFormat("d MMM yyyy");
 
@@ -73,8 +77,9 @@ public class TaskDataViewAdapter extends RecyclerView.Adapter<TaskDataViewAdapte
     }
 
     //this method will bind the data to the viewholder object
+    //DECLARED FINAL (holder) TO BE ABLE TO CALL THEM FROM INNER CLASS AT AN ON CLICK EVENT
     @Override
-    public void onBindViewHolder(TaskDataViewAdapter.TaskDataViewHolder holder, final int position) {
+    public final void onBindViewHolder(final TaskDataViewAdapter.TaskDataViewHolder holder, final int position) {
 
         if (mDaysWarningRed == null || mDaysWarningYellow == null || dueDateIsOn == null){
             // GET VARIABLES FOR RED AND YELLOW MARKER OUT OF SHARED PREFERENCES // VORZEICHEN UMDREHEN!!!!!!!!!!!
@@ -88,7 +93,7 @@ public class TaskDataViewAdapter extends RecyclerView.Adapter<TaskDataViewAdapte
         }
 
         //Gets the specific position of the list item
-        final TaskData taskDataListItem = mTaskDataList.get(position);
+        taskDataListItem = mTaskDataList.get(position);
         //Sets the list items to the specific view object
         holder.tvContent.setText(taskDataListItem.getContent());
         holder.tvDateCreated.setText(dateFormat.format(taskDataListItem.getDatecreated()));
@@ -184,6 +189,10 @@ public class TaskDataViewAdapter extends RecyclerView.Adapter<TaskDataViewAdapte
         holder.frameLayout.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                //GET THE POSITION OF THE ITEM THAT HAS BEEN CLICKED
+                int pos = holder.getAdapterPosition();
+                //FILL NEW LISTITEM WITH DATA FROM THE SPECIFIC POSITION IN THE ITEMLIST
+                taskDataListItem = mTaskDataList.get(pos);
 
                 //Define variables to be mapped to values of clicked item
                 String taskID = taskDataListItem.getId();
@@ -205,7 +214,11 @@ public class TaskDataViewAdapter extends RecyclerView.Adapter<TaskDataViewAdapte
             @Override
             public void onClick(View v) {
                 Context context = v.getContext();
-                Toast.makeText(context, "delete clicked", Toast.LENGTH_SHORT).show();
+                Toast.makeText(context, "delete clicked for Item Pos: " + position, Toast.LENGTH_SHORT).show();
+
+                //GET THE POSITION OF THE ITEM THAT HAS BEEN CLICKED
+                int pos = holder.getAdapterPosition();
+                removeItem(pos);
             }
         });
 
@@ -236,6 +249,7 @@ public class TaskDataViewAdapter extends RecyclerView.Adapter<TaskDataViewAdapte
                 context.startActivity(intent);
             }
         });*/
+
     }
 
     //returns the number of items covered in the List
@@ -282,6 +296,11 @@ public class TaskDataViewAdapter extends RecyclerView.Adapter<TaskDataViewAdapte
     public void filterList(ArrayList<TaskData> filteredList){
         mTaskDataList = filteredList;
         notifyDataSetChanged();
+    }
+
+    public void removeItem(int pos) {
+        mTaskDataList.remove(pos);
+        notifyItemRemoved(pos);
     }
 
 /*    public Filter getFilter(){
@@ -333,4 +352,6 @@ public class TaskDataViewAdapter extends RecyclerView.Adapter<TaskDataViewAdapte
             }
         };
     }*/
+
+
 }

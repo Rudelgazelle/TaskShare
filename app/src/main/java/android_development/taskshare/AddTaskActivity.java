@@ -5,6 +5,7 @@ import android.app.Dialog;
 import android.content.Intent;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
@@ -17,11 +18,17 @@ import android.widget.DatePicker;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.TextView;
+import android.widget.Toast;
 
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.firestore.CollectionReference;
+import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -30,6 +37,7 @@ import java.util.Date;
 
 public class AddTaskActivity extends AppCompatActivity {
 
+    public static final String FIRESTORE_TAG = "Firestore";
     //Variable for date field
     public Date currentDate;
     public Date mDueDate;
@@ -42,6 +50,10 @@ public class AddTaskActivity extends AppCompatActivity {
     //unique key under which the data is stored in Firebase
     public String key;
     public String userID;
+
+    // Initialize the FireStore Database instance
+    private FirebaseFirestore db;
+    private CollectionReference mTaskCollectionRef;
 
     // Initialize the Firebase Database instance
     public FirebaseDatabase database;
@@ -78,6 +90,9 @@ public class AddTaskActivity extends AppCompatActivity {
 
         //Get UserData from stored object of the PutExtra Method by the NavigationActivity
         userID = getIntent().getStringExtra("userID");
+
+        //initialize the Database instance.
+        db = FirestoreHelper.getDatabase();
 
         //initialize the Database instance.
         database = FirebaseDatabase.getInstance();
@@ -158,6 +173,29 @@ public class AddTaskActivity extends AppCompatActivity {
             public void onClick(View view) {
 
                 //set variable values for content to be stored
+                content = etTaskContent.getText().toString();
+
+                //Set Database Reference path
+                mTaskCollectionRef = db.collection("user").document(userID).collection("tasks");
+
+                //create new TaskData object
+                TaskData taskData = new TaskData(key, content, currentDate, mDueDate, mIsFavorite);
+
+                //add the object to the database
+                mTaskCollectionRef.add(taskData).addOnSuccessListener(new OnSuccessListener<DocumentReference>() {
+                    @Override
+                    public void onSuccess(DocumentReference documentReference) {
+                        Log.d(FIRESTORE_TAG, "Task has been successfully stored");
+                    }
+                }).addOnFailureListener(new OnFailureListener() {
+                    @Override
+                    public void onFailure(@NonNull Exception e) {
+                        Toast.makeText(AddTaskActivity.this, "Error storing task! " + e.toString(), Toast.LENGTH_SHORT).show();
+                        Log.d(FIRESTORE_TAG, "Error storing task! " + e.getMessage());
+                    }
+                });
+
+                /*//set variable values for content to be stored
                 key = dbRef.push().getKey();
                 content = etTaskContent.getText().toString();
 
@@ -170,10 +208,10 @@ public class AddTaskActivity extends AppCompatActivity {
                     TaskData taskData = new TaskData(key, content, currentDate, mDueDate, mIsFavorite);
                     dbRef.child("userdata").child(userID).child("tasks").child(key).setValue(taskData);
                 }
-
+*/
                 //Show snackbar with message, that data has been stored to the database
-                Snackbar.make(view, "Data has been stored in google Firebase", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
+                //Snackbar.make(view, "Data has been stored in google Firebase", Snackbar.LENGTH_LONG)
+                //        .setAction("Action", null).show();
 
 
                 //After saving procedure the view is navigated back to the main menu
@@ -213,5 +251,5 @@ public class AddTaskActivity extends AppCompatActivity {
                     updateDatePicker();
                 }
             };
-
 }
+

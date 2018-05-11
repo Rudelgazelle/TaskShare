@@ -534,8 +534,7 @@ public class NavigationActivity extends AppCompatActivity
         /***********************************************************************************************
          * THIS METHOD RETRIEVES ALL MEMBERSHIPS DATA FROM THE DATABASE BASED ON THE CURRENT USER ID
          **********************************************************************************************/
-//TODO: CHANGE THE HARDCODED USER ID TO THE VARIABLE
-        membershipCollectionRef = db.collection("users").document("acSIBra6pUcemLPBlHFnZLNuchy2").collection("memberships");
+        membershipCollectionRef = db.collection("users").document(userID).collection("memberships");
         membershipCollectionRef.addSnapshotListener(this, new EventListener<QuerySnapshot>() {
             @Override
             public void onEvent(@Nullable QuerySnapshot queryDocumentSnapshots, @Nullable FirebaseFirestoreException e) {
@@ -709,9 +708,6 @@ public class NavigationActivity extends AppCompatActivity
                             //TODO: THERE COULD BE A NICE TRANSITION ANIMATION OF THE TWO BUTTONS
 
                             fabAddGroupTask.setVisibility(View.VISIBLE);
-
-                            //TODO: PUTEXTRA METHOD WITH PARSING THE GroupID to be used in the opened GroupActivity
-
 
                             return false;
                         }
