@@ -192,19 +192,6 @@ public class UserSettingsActivity extends AppCompatActivity {
 
         //------------------------------------------------------------------------------------------
 
-        btnLogout = (Button) findViewById(R.id.btnLogout);
-        btnLogout.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                //unauthorise user from firebase
-                mAuth.signOut();
-
-                //After logging out the user the view is navigated back to the login activity
-                Intent loginActivityIntent = new Intent(UserSettingsActivity.this, UserLoginStartActivity.class);
-                UserSettingsActivity.this.startActivity(loginActivityIntent);
-            }
-        });
-
     }
 
         //TODO: implement save option to store changed data in Firebase Auth database

@@ -50,19 +50,6 @@
             android:layout_margin="3dp"
             android:text="android.studio@android.com" />
 
-        <Button
-            android:id="@+id/btnUserSetting"
-            style="@style/Widget.AppCompat.Button.Small"
-            android:layout_column="3"
-            android:layout_gravity="bottom"
-            android:layout_row="1"
-            android:layout_rowSpan="3"
-            android:layout_margin="3dp"
-            android:layout_height="20dp"
-            android:layout_width="20dp"
-            android:background="@android:drawable/ic_menu_edit" />
-
-
         <ImageButton
             android:id="@+id/ibtnToggleAccountSettings"
             android:layout_width="20dp"

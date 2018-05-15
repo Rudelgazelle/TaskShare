@@ -1,5 +1,6 @@
 package android_development.taskshare;
 
+import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -41,6 +42,7 @@ import java.util.List;
 // 1- implement methods by pressing alt + enter
 public class TaskDataViewAdapter extends RecyclerView.Adapter<TaskDataViewAdapter.TaskDataViewHolder> {
 
+    public static final String VIEW_ADAPTER_TAG = "ViewAdapter";
     private List<TaskData> mTaskDataList;
     private List<TaskData> mArrayList;
     private Context context;
@@ -213,12 +215,19 @@ public class TaskDataViewAdapter extends RecyclerView.Adapter<TaskDataViewAdapte
         holder.btnDeleteItem.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Context context = v.getContext();
-                Toast.makeText(context, "delete clicked for Item Pos: " + position, Toast.LENGTH_SHORT).show();
 
                 //GET THE POSITION OF THE ITEM THAT HAS BEEN CLICKED
                 int pos = holder.getAdapterPosition();
+
+                //FILL NEW LISTITEM WITH DATA FROM THE SPECIFIC POSITION IN THE ITEMLIST
+                String taskID = mTaskDataList.get(pos).getId();
+
+                //REMOVE ITEM FROM THE RECYCLERVIEW
                 removeItem(pos);
+
+                //START METHOD FROM NAVIGATIONACTIVITY TO DELET ITEM FROM DATABASE
+                NavigationActivity navigationActivity = new NavigationActivity();
+                navigationActivity.deleteUserTaskFromDatabase(taskID);
             }
         });
 

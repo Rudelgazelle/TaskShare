@@ -49,16 +49,16 @@
             android:id="@+id/btnAddMember"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:onClick="pickContact"
             android:text="@string/button_addMember_text"
             tools:layout_editor_absoluteX="8dp"
             tools:layout_editor_absoluteY="139dp" />
 
-        <ListView
-            android:id="@+id/lvGroupMember"
-            android:layout_width="368dp"
-            android:layout_height="244dp"
-            tools:layout_editor_absoluteX="8dp"
-            tools:layout_editor_absoluteY="203dp" />
+        <android.support.v7.widget.RecyclerView
+            android:id="@+id/recyclerViewMemberData"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            tools:listitem="@layout/list_item_groupmember" />
 
     </LinearLayout>
 </android.support.constraint.ConstraintLayout>

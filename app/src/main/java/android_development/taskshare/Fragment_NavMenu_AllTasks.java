@@ -31,8 +31,15 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.Query;
 import com.google.firebase.database.ValueEventListener;
+import com.google.firebase.firestore.CollectionReference;
+import com.google.firebase.firestore.DocumentChange;
+import com.google.firebase.firestore.EventListener;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.FirebaseFirestoreException;
+import com.google.firebase.firestore.QuerySnapshot;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 
@@ -41,7 +48,7 @@ import java.util.List;
  * Activities that contain this fragment must implement the
  * {@link Fragment_NavMenu_AllTasks.OnFragmentInteractionListener} interface
  * to handle interaction events.
- * Use the {@link Fragment_NavMenu_AllTasks#newInstance} factory method to
+ * Use the {@link Fragment_NavMenu_AllTasks.OnFragmentInteractionListener} factory method to
  * create an instance of this fragment.
  */
 
@@ -50,55 +57,30 @@ public class Fragment_NavMenu_AllTasks extends Fragment {
     // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
     private static final String ARG_PARAM1 = "param1";
     private static final String ARG_PARAM2 = "param2";
+    public static final String TASK_DATA_TAG = "TaskData";
 
-    // TODO: Rename and change types of parameters
-    private String mParam1;
-    private String mParam2;
+    public static final String ALL_TASK_FRAGMENT_TAG = "AllTasksFragment";
+    private Fragment_NavMenu_GroupTasks.OnFragmentInteractionListener mListener;
 
-    private OnFragmentInteractionListener mListener;
+    //Initialize FirebaseAuth instance
+    public String userID;
+    public int mItemId;
 
-    //Firebase current user variable
-    String userID;
-
-    //for storing the listsize of the tasklist array
-    int mListSize;
-    int mListIndex;
+    public FirebaseAuth mAuth;
+    FirebaseUser currentUser = null;
+    FirebaseAuth.AuthStateListener authStateListener;
 
     //Initialize the recyclerView
     RecyclerView recyclerViewTaskData;
     TaskDataViewAdapter adapter;
     List<TaskData> taskDataListItems;
 
+    //Initialize FireStore References
+    FirebaseFirestore db = FirestoreHelper.getDatabase();
+    CollectionReference taskCollectionRef;
+
     public Fragment_NavMenu_AllTasks() {
         // Required empty public constructor
-    }
-
-    /**
-     * Use this factory method to create a new instance of
-     * this fragment using the provided parameters.
-     *
-     * @param param1 Parameter 1.
-     * @param param2 Parameter 2.
-     * @return A new instance of fragment Fragment_NavMenu_AllTasks.
-     */
-
-    // TODO: Rename and change types and number of parameters
-    public static Fragment_NavMenu_AllTasks newInstance(String param1, String param2) {
-        Fragment_NavMenu_AllTasks fragment = new Fragment_NavMenu_AllTasks();
-        Bundle args = new Bundle();
-        args.putString(ARG_PARAM1, param1);
-        args.putString(ARG_PARAM2, param2);
-        fragment.setArguments(args);
-        return fragment;
-    }
-
-    @Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        if (getArguments() != null) {
-            mParam1 = getArguments().getString(ARG_PARAM1);
-            mParam2 = getArguments().getString(ARG_PARAM2);
-        }
     }
 
     @Override
@@ -109,140 +91,32 @@ public class Fragment_NavMenu_AllTasks extends Fragment {
         setHasOptionsMenu(true);
 
         //Define the view object
+        // LAYOUT FROM "ALL TASKS" CAN BE REUSED, BECAUSE THEY LOOK IDENTICAL
         View view = inflater.inflate(R.layout.fragment__nav_menu__all_tasks, container, false);
+        //return inflater.inflate(R.layout.fragment_nav_menu_group_tasks, container, false);
 
-        //Initiate the RecyclerView object //map the Recyclerview object to the xml RecyclerView
-        recyclerViewTaskData = (RecyclerView) view.findViewById(R.id.recyclerViewTaskData);
+        //retrieve the userID and Group IF from NavigationActivity
+        retrieveDataFromNavigationActivity();
 
         /***********************************************************************************************
          * Initialize the Arraylist, adapter and set the adapter to the recycleView
          **********************************************************************************************/
+        // Create a new instance of a ArrayList; Initialize the above defined listitem object
+        taskDataListItems = new ArrayList<>();
+        //Initiate the RecyclerView object //map the Recyclerview object to the xml RecyclerView
+        // Instanciate a new adapter for the Recycleview and parse the "listitem" and "Context"
+        adapter = new TaskDataViewAdapter(taskDataListItems, getContext());
 
+        recyclerViewTaskData = (RecyclerView) view.findViewById(R.id.recyclerViewTaskData);
         //Every item of the recyclerview will have a fixed size
         recyclerViewTaskData.setHasFixedSize(true);
         recyclerViewTaskData.setLayoutManager(new LinearLayoutManager(getContext()));
-
-        // Create a new instance of a ArrayList; Initialize the above defined listitem object
-        taskDataListItems = new ArrayList<>();
-
-        // set the database reference to the correct child object (TaskData)
-        //Initialize Firebase objects
-        FirebaseDatabase database = FirebaseHelper.getDatabase();
-        DatabaseReference dbRef = database.getReference();
-
-        //Retrieve userID from NavigationActivity
-        retrieveUserID();
-
-        Log.d("User", "ActivUser-loaded in Fragment: " + userID);
-
-        // Instanciate a new adapter for the Recycleview and parse the "listitem" and "Context"
-        adapter = new TaskDataViewAdapter(taskDataListItems, getContext());
         //set the adapter to the recyclerview
         recyclerViewTaskData.setAdapter(adapter);
 
-        dbRef = dbRef.child("userdata").child(userID).child("tasks");
-        Query query = dbRef.orderByChild("datecreated");
-
-        // add Child eventlistener to the database reference, this updates the Arraylist and notifies the Adapter of the recyclerview, that the data has been changed
-        query.addChildEventListener(new ChildEventListener() {
-            @Override
-            public void onChildAdded(DataSnapshot dataSnapshot, String s) {
-
-                //retrieve data as a TaskData object
-                TaskData taskData = dataSnapshot.getValue(TaskData.class);
-                //add the retrived object to Arraylist
-                taskDataListItems.add(taskData);
-                // notify the adapter that data has been changed and needs to be refreshed
-                adapter.notifyDataSetChanged();
-
-                //save the listsize to shared preferences
-                mListSize = taskDataListItems.size();
-                saveSharedPreferences(mListSize);
-            }
-
-            @Override
-            public void onChildChanged(DataSnapshot dataSnapshot, String s) {
-
-                Log.d("Task_Changed", "onChildChanged is triggered");
-
-                int mListIndex = 0;
-
-                TaskData taskDataUpdated = dataSnapshot.getValue(TaskData.class);
-                String snapShotKey = dataSnapshot.getKey();
-
-                Log.d("Task_Changed", "snapShotKey: " + dataSnapshot.getKey());
-
-                for (TaskData taskData : taskDataListItems) {
-                    // retrive the id of the task that has been changed
-                    String mTaskID = taskData.getId();
-
-                    Log.d("Task_Changed", "mID: " + mTaskID);
-
-                    if (mTaskID.equals(snapShotKey)){
-                        Log.d("Task_Changed", "ID MATCH!");
-                        //IF the correct id is found in the Data snapshot, change the respective object in the array list
-                        //set the retrieved data to the existing index item of the ArrayList
-                        taskDataListItems.set(mListIndex, taskDataUpdated);
-                    }
-
-                    //add +1 to the index value for each iteration
-                    mListIndex ++;
-                }
-
-                adapter.notifyDataSetChanged();
-            }
-
-            @Override
-            public void onChildRemoved(DataSnapshot dataSnapshot) {
-
-                int mListIndex = 0;
-
-                String snapShotKey = dataSnapshot.getKey();
-
-                Log.d("Task_Changed", "snapShotKey: " + dataSnapshot.getKey());
-
-                for (TaskData taskData : taskDataListItems) {
-                    String mTaskID = taskData.getId();
-
-                    Log.d("Task_Changed", "mID: " + mTaskID);
-
-                    if (mTaskID.equals(snapShotKey)){
-                        Log.d("Task_Changed", "ID MATCH!");
-                        //IF the correct id is found in the Data snapshot, remove the respective object in the array list
-                        taskDataListItems.remove(mListIndex);
-                    }
-                    //add +1 to the index value for each iteration
-                    mListIndex ++;
-                }
-
-                adapter.notifyDataSetChanged();
-
-                //save the listsize to shared preferences
-                mListSize = taskDataListItems.size();
-                saveSharedPreferences(mListSize);
-            }
-
-            @Override
-            public void onChildMoved(DataSnapshot dataSnapshot, String s) {
-
-            }
-
-            @Override
-            public void onCancelled(DatabaseError databaseError) {
-
-            }
-        });
 
         // Inflate the layout for this fragment
         return view;
-
-    }
-
-    //This picks the searchview from Resources.
-    @Override
-    public void onPrepareOptionsMenu(Menu menu) {
-        MenuItem mSearchMenuItem = menu.findItem(R.id.mSearchView);
-        SearchView searchView = (SearchView) mSearchMenuItem.getActionView();
     }
 
     // TODO: Rename method, update argument and hook method into UI event
@@ -253,24 +127,173 @@ public class Fragment_NavMenu_AllTasks extends Fragment {
     }
 
     @Override
+    public void onStart() {
+        super.onStart();
+
+        /***********************************************************************************************
+         * SET COLLECTION REFERENCE
+         **********************************************************************************************/
+        taskCollectionRef = db.collection("users").document(userID).collection("tasks");
+
+        //CLEAR THE LIST, AS THERE WOULD BE A DUBLICATION OF DATA IF THE METHOD WOULD BE CALLED AGAIN, E.G AFTER A WAKEUP OF THE DEVICE
+        taskDataListItems.clear();
+
+        /***********************************************************************************************
+         * SET COLLECTION REFERENCE LISTENER TO GROUPTASKDATA, TO LISTEN TO CHANGES IN THE DATACOLLECTION
+         **********************************************************************************************/
+        taskCollectionRef.addSnapshotListener(getActivity(), new EventListener<QuerySnapshot>() {
+            @Override
+            public void onEvent(@javax.annotation.Nullable QuerySnapshot queryDocumentSnapshots, @javax.annotation.Nullable FirebaseFirestoreException e) {
+
+                //Check if there is an error
+                if (e != null) {
+                    Log.d(Fragment_NavMenu_GroupTasks.GROUP_TASK_FRAGMENT_TAG, "Error!" + e.getMessage());
+                }
+
+                // Iterate through the QueryDocumentSnapshot
+                for (DocumentChange documentChange : queryDocumentSnapshots.getDocumentChanges()) {
+
+                    switch (documentChange.getType()) {
+
+                        case ADDED: //IF A NEW DOCUMENT IS ADDED, EXECUTE THIS CODE
+
+                            Log.d(ALL_TASK_FRAGMENT_TAG, "ADDED is triggered");
+                            //retrieve data as a TaskData object
+                            TaskData taskDataAdded = documentChange.getDocument().toObject(TaskData.class);
+                            //ad the Id to the taskdata object, that has not been stored as fieldvalue
+                            taskDataAdded.setId(documentChange.getDocument().getId());
+                            //add the retrived object to Arraylist
+                            taskDataListItems.add(taskDataAdded);
+
+                            break;
+
+                        case MODIFIED: //IF A DOCUMENT HAS BEEN MODIFIED, EXECUTE THIS CODE
+                            Log.d(ALL_TASK_FRAGMENT_TAG, "MODIFIED is triggered");
+
+                            int mListIndex = 0;
+                            TaskData taskDataUpdated = documentChange.getDocument().toObject(TaskData.class);
+                            //ad the Id to the taskdata object, that has not been stored as fieldvalue
+                            taskDataUpdated.setId(documentChange.getDocument().getId());
+
+                            for (TaskData taskDataModified : taskDataListItems) {
+                                // retrive the id of the task that has been changed
+                                String mTaskID = taskDataModified.getId();
+
+                                Log.d(ALL_TASK_FRAGMENT_TAG, "mID: " + mTaskID);
+
+                                if (mTaskID.equals(taskDataUpdated.getId())){
+                                    Log.d(ALL_TASK_FRAGMENT_TAG, "ID MATCH!");
+                                    //IF the correct id is found in the Data snapshot, change the respective object in the array list
+                                    //set the retrieved data to the existing index item of the ArrayList
+                                    taskDataListItems.set(mListIndex, taskDataUpdated);
+                                }
+
+                                //add +1 to the index value for each iteration
+                                mListIndex ++;
+                            }
+                            break;
+
+                        case REMOVED: //IF A DOCUMENT HAS BEEN REMOVED, EXECUTE THIS CODE
+                            //THE DELETE FUNCTION HAS TO USE AN ITERATOR, AS THERE CANNOT BE CALLED AN REMOVE OPTION WHEN LIST IS ITERATED OVER.
+                            String taskIdDelete = documentChange.getDocument().getId();
+                            Log.d(ALL_TASK_FRAGMENT_TAG, "REMOVED is triggered");
+
+                            for (Iterator<TaskData> iterator = taskDataListItems.iterator(); iterator.hasNext(); ) {
+                                TaskData taskData = iterator.next();
+                                if (taskData.getId().equals(taskIdDelete)) {
+                                    iterator.remove();
+                                }
+                            }
+                            break;
+                    }
+
+//TODO: DELTE IF APP KEEPS RUNNING STABLE (THIS HAS BEEN REDONE AS CASE)
+                    /*//IF A NEW DOCUMENT IS ADDED, EXECUTE THIS CODE
+                    if (documentChange.getType() == DocumentChange.Type.ADDED) {
+
+                        Log.d(GROUP_TASK_FRAGMENT_TAG, "ADDED is triggered");
+
+                        //retrieve data as a TaskData object
+                        TaskData taskData = documentChange.getDocument().toObject(TaskData.class);
+                        //ad the Id to the taskdata object, that has not been stored as fieldvalue
+                        taskData.setId(documentChange.getDocument().getId());
+                        //add the retrived object to Arraylist
+                        taskDataListItems.add(taskData);
+
+                        // After every object from the QueryDocumentSnapshot has been retrieved, notify the Adapter, that the dataset has changed
+                        adapter.notifyDataSetChanged();
+                    } else {
+
+                        //IF AN EXISTING DOCUMENT IS MODIFIED, EXECUTE THIS CODE
+                        if (documentChange.getType() == DocumentChange.Type.MODIFIED) {
+
+                            Log.d(GROUP_TASK_FRAGMENT_TAG, "MODIFIED is triggered");
+
+                            int mListIndex = 0;
+                            TaskData taskDataUpdated = documentChange.getDocument().toObject(TaskData.class);
+                            //ad the Id to the taskdata object, that has not been stored as fieldvalue
+                            taskDataUpdated.setId(documentChange.getDocument().getId());
+
+                            for (TaskData taskData : taskDataListItems) {
+                                // retrive the id of the task that has been changed
+                                String mTaskID = taskData.getId();
+
+                                Log.d(GROUP_TASK_FRAGMENT_TAG, "mID: " + mTaskID);
+
+                                if (mTaskID.equals(taskDataUpdated.getId())){
+                                    Log.d(GROUP_TASK_FRAGMENT_TAG, "ID MATCH!");
+                                    //IF the correct id is found in the Data snapshot, change the respective object in the array list
+                                    //set the retrieved data to the existing index item of the ArrayList
+                                    taskDataListItems.set(mListIndex, taskDataUpdated);
+                                }
+
+                                //add +1 to the index value for each iteration
+                                mListIndex ++;
+                            }
+
+                            // After every object from the QueryDocumentSnapshot has been retrieved, notify the Adapter, that the dataset has changed
+                            adapter.notifyDataSetChanged();
+
+                        } else {
+
+                            //IF A DOCUMENT IS DELETED, EXECUTE THIS CODE
+                            if (documentChange.getType() == DocumentChange.Type.REMOVED){
+
+                                //THE DELETE FUNCTION HAS TO USE AN ITERATOR, AS THERE CANNOT BE CALLED AN REMOVE OPTION WHEN LIST IS ITERATED OVER.
+                                String taskIdDelete = documentChange.getDocument().getId();
+                                Log.d(GROUP_TASK_FRAGMENT_TAG, "REMOVED is triggered");
+
+                                for (Iterator<TaskData> iterator = taskDataListItems.iterator(); iterator.hasNext(); ) {
+                                    TaskData taskData = iterator.next();
+                                    if (taskData.getId().equals(taskIdDelete)) {
+                                        iterator.remove();
+                                    }
+                                }
+
+                                // After every object from the QueryDocumentSnapshot has been retrieved, notify the Adapter, that the dataset has changed
+                                adapter.notifyDataSetChanged();
+                            }
+                        }
+
+                    }*/
+
+                    adapter.notifyDataSetChanged();
+                }
+            }
+        });
+    }
+
+    @Override
     public void onDetach() {
         super.onDetach();
         mListener = null;
     }
 
-    /**
-     * This interface must be implemented by activities that contain this
-     * fragment to allow an interaction in this fragment to be communicated
-     * to the activity and potentially other fragments contained in that
-     * activity.
-     * <p>
-     * See the Android Training lesson <a href=
-     * "http://developer.android.com/training/basics/fragments/communicating.html"
-     * >Communicating with Other Fragments</a> for more information.
-     */
-    public interface OnFragmentInteractionListener {
-        // TODO: Update argument type and name
-        void onFragmentInteraction(Uri uri);
+    //This picks the searchview from Resources.
+    @Override
+    public void onPrepareOptionsMenu(Menu menu) {
+        MenuItem mSearchMenuItem = menu.findItem(R.id.mSearchView);
+        SearchView searchView = (SearchView) mSearchMenuItem.getActionView();
     }
 
     @Override
@@ -300,6 +323,21 @@ public class Fragment_NavMenu_AllTasks extends Fragment {
         });
     }
 
+    /**
+     * This interface must be implemented by activities that contain this
+     * fragment to allow an interaction in this fragment to be communicated
+     * to the activity and potentially other fragments contained in that
+     * activity.
+     * <p>
+     * See the Android Training lesson <a href=
+     * "http://developer.android.com/training/basics/fragments/communicating.html"
+     * >Communicating with Other Fragments</a> for more information.
+     */
+    public interface OnFragmentInteractionListener {
+        // TODO: Update argument type and name
+        void onFragmentInteraction(Uri uri);
+    }
+
     /***********************************************************************************************
      * Method will be called every time a figure has been changed in the search bar
      **********************************************************************************************/
@@ -318,43 +356,18 @@ public class Fragment_NavMenu_AllTasks extends Fragment {
         }
     }
 
-    /***********************************************************************************************
-     * SAVE SHARED PREFERENCES TO FILE
-     **********************************************************************************************/
-    public void saveSharedPreferences(int mListSize){
-        // 1. Open Shared Preference File
-        SharedPreferences mSharedPref = getContext().getSharedPreferences("mSharePrefFile", 0);
-        // 2. Initialize Editor Class
-        SharedPreferences.Editor editor = mSharedPref.edit();
-        // 3. Get Values from fields and store in Shared Preferences
-        editor.putInt("listSizeTasksAll", mListSize);
-        // 4. Store the keys
-        editor.commit();
-    }
-
-
-
-    /***********************************************************************************************
-     * SAVE SHARED PREFERENCES TO FILE
-     **********************************************************************************************/
-    public void saveShareUserPreferences(String userID){
-        // 1. Open Shared Preference File
-        SharedPreferences mSharedPref = getContext().getSharedPreferences("mSharePrefFile", 0);
-        // 2. Initialize Editor Class
-        SharedPreferences.Editor editor = mSharedPref.edit();
-        // 3. Get Values from fields and store in Shared Preferences
-        editor.putString("userID", userID);
-        // 4. Store the keys
-        editor.commit();
-    }
-
-    public void retrieveUserID(){
-
+    public void retrieveDataFromNavigationActivity(){
         NavigationActivity navigationActivity;
         navigationActivity = (NavigationActivity) getActivity();
-
         //attach public variable to local variable
         userID = navigationActivity.userID;
     }
 
+    /***********************************************************************************************
+     * Update Data in Recyclerview based on refreshed List of NavigationActivity                   *
+     ***********************************************************************************************/
+    public void updateRecyclerviewWithFreshData(List<TaskData> updatedTaskDataList){
+        taskDataListItems = updatedTaskDataList;
+        adapter.notifyDataSetChanged();
+    }
 }

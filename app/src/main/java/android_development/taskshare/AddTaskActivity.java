@@ -176,7 +176,7 @@ public class AddTaskActivity extends AppCompatActivity {
                 content = etTaskContent.getText().toString();
 
                 //Set Database Reference path
-                mTaskCollectionRef = db.collection("user").document(userID).collection("tasks");
+                mTaskCollectionRef = db.collection("users").document(userID).collection("tasks");
 
                 //create new TaskData object
                 TaskData taskData = new TaskData(key, content, currentDate, mDueDate, mIsFavorite);

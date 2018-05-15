@@ -322,4 +322,12 @@ public class Fragment_NavMenu_FavoriteTasks extends Fragment {
         //attach public variable to local variable
         userID = navigationActivity.userID;
     }
+
+    /***********************************************************************************************
+     * Update Data in Recyclerview based on refreshed List of NavigationActivity                   *
+     ***********************************************************************************************/
+    public void updateRecyclerviewWithFreshData(List<TaskData> updatedTaskDataList){
+        taskDataListItems = updatedTaskDataList;
+        adapter.notifyDataSetChanged();
+    }
 }

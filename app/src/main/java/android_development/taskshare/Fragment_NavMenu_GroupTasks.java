@@ -46,6 +46,7 @@ import javax.annotation.Nullable;
  * {@link Fragment_NavMenu_GroupTasks.OnFragmentInteractionListener} interface
  * to handle interaction events.
  */
+
 public class Fragment_NavMenu_GroupTasks extends Fragment {
 
     public static final String GROUP_TASK_FRAGMENT_TAG = "GroupTaskFragment";
@@ -76,6 +77,10 @@ public class Fragment_NavMenu_GroupTasks extends Fragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
+
+        //This enables the search menu function --> further implementation in "onPrepareOptionsMenu"
+        setHasOptionsMenu(true);
+
         //Define the view object
         // LAYOUT FROM "ALL TASKS" CAN BE REUSED, BECAUSE THEY LOOK IDENTICAL
         View view = inflater.inflate(R.layout.fragment__nav_menu__all_tasks, container, false);
@@ -140,8 +145,62 @@ public class Fragment_NavMenu_GroupTasks extends Fragment {
                 // Iterate through the QueryDocumentSnapshot
                 for (DocumentChange documentChange : queryDocumentSnapshots.getDocumentChanges()) {
 
-                    //TODO: THIS COULD BETTER BE HANDLD IN A CASE INSTEAD OF IF STATEMENTS!!!!!!!!!!!!!!!
-                    //IF A NEW DOCUMENT IS ADDED, EXECUTE THIS CODE
+                    switch (documentChange.getType()) {
+
+                        case ADDED: //IF A NEW DOCUMENT IS ADDED, EXECUTE THIS CODE
+
+                            Log.d(GROUP_TASK_FRAGMENT_TAG, "ADDED is triggered");
+                            //retrieve data as a TaskData object
+                            TaskData taskDataAdded = documentChange.getDocument().toObject(TaskData.class);
+                            //ad the Id to the taskdata object, that has not been stored as fieldvalue
+                            taskDataAdded.setId(documentChange.getDocument().getId());
+                            //add the retrived object to Arraylist
+                            taskDataListItems.add(taskDataAdded);
+
+                            break;
+
+                        case MODIFIED: //IF A DOCUMENT HAS BEEN MODIFIED, EXECUTE THIS CODE
+                            Log.d(GROUP_TASK_FRAGMENT_TAG, "MODIFIED is triggered");
+
+                            int mListIndex = 0;
+                            TaskData taskDataUpdated = documentChange.getDocument().toObject(TaskData.class);
+                            //ad the Id to the taskdata object, that has not been stored as fieldvalue
+                            taskDataUpdated.setId(documentChange.getDocument().getId());
+
+                            for (TaskData taskDataModified : taskDataListItems) {
+                                // retrive the id of the task that has been changed
+                                String mTaskID = taskDataModified.getId();
+
+                                Log.d(GROUP_TASK_FRAGMENT_TAG, "mID: " + mTaskID);
+
+                                if (mTaskID.equals(taskDataUpdated.getId())){
+                                    Log.d(GROUP_TASK_FRAGMENT_TAG, "ID MATCH!");
+                                    //IF the correct id is found in the Data snapshot, change the respective object in the array list
+                                    //set the retrieved data to the existing index item of the ArrayList
+                                    taskDataListItems.set(mListIndex, taskDataUpdated);
+                                }
+
+                                //add +1 to the index value for each iteration
+                                mListIndex ++;
+                            }
+                            break;
+
+                        case REMOVED: //IF A DOCUMENT HAS BEEN REMOVED, EXECUTE THIS CODE
+                            //THE DELETE FUNCTION HAS TO USE AN ITERATOR, AS THERE CANNOT BE CALLED AN REMOVE OPTION WHEN LIST IS ITERATED OVER.
+                            String taskIdDelete = documentChange.getDocument().getId();
+                            Log.d(GROUP_TASK_FRAGMENT_TAG, "REMOVED is triggered");
+
+                            for (Iterator<TaskData> iterator = taskDataListItems.iterator(); iterator.hasNext(); ) {
+                                TaskData taskData = iterator.next();
+                                if (taskData.getId().equals(taskIdDelete)) {
+                                    iterator.remove();
+                                }
+                            }
+                            break;
+                    }
+
+//TODO: DELTE IF APP KEEPS RUNNING STABLE (THIS HAS BEEN REDONE AS CASE)
+                    /*//IF A NEW DOCUMENT IS ADDED, EXECUTE THIS CODE
                     if (documentChange.getType() == DocumentChange.Type.ADDED) {
 
                         Log.d(GROUP_TASK_FRAGMENT_TAG, "ADDED is triggered");
@@ -208,7 +267,9 @@ public class Fragment_NavMenu_GroupTasks extends Fragment {
                             }
                         }
 
-                    }
+                    }*/
+
+                    adapter.notifyDataSetChanged();
                 }
             }
         });

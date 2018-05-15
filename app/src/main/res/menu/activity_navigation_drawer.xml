@@ -63,7 +63,7 @@
     <group android:id="@+id/groupUserAccountMenu"
         android:visible="false">
         <item
-            android:id="@+id/nav_userAccont"
+            android:id="@+id/nav_userAccount"
             android:icon="@drawable/ic_menu_settings"
             android:title="Account Settings" />
         <item
