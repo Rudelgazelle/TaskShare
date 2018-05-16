@@ -16,8 +16,6 @@ import java.util.Date;
 
 public class UserData implements Serializable {
 
-
-
     public String userId;
     public String userDisplayName;
     public String userMail;
@@ -58,6 +56,7 @@ public class UserData implements Serializable {
         this.userDisplayName = userDisplayName;
     }
 
+    @Exclude
     public String getUserMail() {
         return userMail;
     }
@@ -66,6 +65,7 @@ public class UserData implements Serializable {
         this.userMail = userMail;
     }
 
+    @Exclude
     public String getUserPhone() {
         return userPhone;
     }
@@ -74,6 +74,7 @@ public class UserData implements Serializable {
         this.userPhone = userPhone;
     }
 
+    @Exclude
     public String getUserPhotoUrl() {
         return userPhotoUrl;
     }
@@ -82,6 +83,7 @@ public class UserData implements Serializable {
         this.userPhotoUrl = userPhotoUrl;
     }
 
+    @Exclude
     public Long getUserHashCode() {
         return userHashCode;
     }

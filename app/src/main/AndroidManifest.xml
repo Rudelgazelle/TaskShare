@@ -124,6 +124,25 @@
                 android:name="android.support.PARENT_ACTIVITY"
                 android:value="android_development.taskshare.NavigationActivity" />
         </activity>
+        <activity
+            android:name=".LoginWithPhoneActivity"
+            android:label="@string/title_activity_login_with_phone"
+            android:parentActivityName=".UserLoginStartActivity"
+            android:theme="@style/AppTheme.NoActionBar">
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="android_development.taskshare.UserLoginStartActivity" />
+        </activity>
+        <activity
+            android:name=".UserRegistrationAddData"
+            android:label="@string/title_activity_user_registration_add_data"
+            android:parentActivityName=".UserLoginStartActivity"
+            android:theme="@style/AppTheme.NoActionBar">
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="android_development.taskshare.UserLoginStartActivity" />
+        </activity>
+        <activity android:name=".UserLoginProviderSelectionActivity"></activity>
     </application>
 
 </manifest>

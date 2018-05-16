@@ -2,11 +2,14 @@ package android_development.taskshare;
 
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.FragmentTransaction;
+import android.support.v4.graphics.drawable.RoundedBitmapDrawable;
+import android.support.v4.graphics.drawable.RoundedBitmapDrawableFactory;
 import android.util.Log;
 import android.view.SubMenu;
 import android.view.View;
@@ -25,11 +28,13 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.bumptech.glide.Glide;
+import com.bumptech.glide.request.target.BitmapImageViewTarget;
 import com.firebase.ui.storage.images.FirebaseImageLoader;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.auth.UserProfileChangeRequest;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.firestore.CollectionReference;
@@ -113,6 +118,9 @@ public class NavigationActivity extends AppCompatActivity
     MenuItem menuItem;
     Boolean mActionSettingsAreToggled;
 
+    //User Object that is used by different Methods
+    //UserData user;
+
     int groupID;
     String mGroupIDforPutExtra;
     int itemID;
@@ -141,11 +149,30 @@ public class NavigationActivity extends AppCompatActivity
         //Boolean required for use of the UserSettingsToggle Button
         mActionSettingsAreToggled = false;
 
-        /*********************************************************************************
-         * RETRIEVE THE CURRENT USER DATA IN A ONE TIME EVENT                            *
-         * (IMPORTANT, AS AUTHSTATELISTENER WILL TAKE A WHILE TO RETRIEVE UPDATED DATA!) *
-         *********************************************************************************/
+//<========================================{ INITIALIZATION OF VIEWS }========================================>
+
+        final NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
+        navigationView.setNavigationItemSelectedListener(this);
+
+        //declare menu variable to be used in different methods
+        menu = navigationView.getMenu();
+
+        //------------------------------------------------------------------------------------------
+        //Initialize object fields for User data // SET VIEW FOR HEADER VIEW FIRST!!!!
+        View header = navigationView.getHeaderView(0);
+        //Initialize view objects
+        ivUserProfile = header.findViewById(R.id.ivUserProfile);
+        tvUserName = header.findViewById(R.id.tvUserName);
+        tvUserMail = header.findViewById(R.id.tvUserMail);
+
+//<========================================{ INITIALIZATION METHODS }========================================>
+
+        // 1. RETRIEVE THE CURRENT USER DATA IN A ONE TIME EVENT (IMPORTANT, AS AUTHSTATELISTENER WILL TAKE A WHILE TO RETRIEVE UPDATED DATA!)
         fetchCurrentUserData();
+
+        // 2. Update the NavDrawer Header with the CurrentUser Data (Name, Mail and Profile picture if available)
+        //TODO: Implement that the profile picture is rounded via GLIDE
+        updateUserdataUI(currentUserData);
 
         //FETCH GroupData in Memberships as one time event
 
@@ -166,8 +193,13 @@ public class NavigationActivity extends AppCompatActivity
 
                 if (mCurrentUser == null) {
                     Toast.makeText(NavigationActivity.this, "User is logged out", Toast.LENGTH_LONG).show();
-                    Intent userLoginStartActivityIntent = new Intent(NavigationActivity.this, UserLoginStartActivity.class);
-                    NavigationActivity.this.startActivity(userLoginStartActivityIntent);
+
+                    Intent userLoginProviderSelectionIntent = new Intent(NavigationActivity.this, UserLoginProviderSelectionActivity.class);
+                    NavigationActivity.this.startActivity(userLoginProviderSelectionIntent);
+
+
+                    /*Intent userLoginStartActivityIntent = new Intent(NavigationActivity.this, UserLoginStartActivity.class);
+                    NavigationActivity.this.startActivity(userLoginStartActivityIntent);*/
                 }
 
                 if (mCurrentUser != null) {
@@ -215,23 +247,8 @@ public class NavigationActivity extends AppCompatActivity
                 super.onDrawerOpened(drawerView);
 
                 //UPDATE THE DISPLAYED USER DATA
-                updateUserdataUI(currentUserData);
-
-                //load shared preference, to get the updated variable of listsize
-                loadSharedPreferencesListSizes();
-
-//TODO REACTIVATE IF THE NEW AUTOMATIC METHOD IN THE LISTENER DOES NOT WORK !!!!!!!!!!!!!!!!!!
-/*
-                //set a new title with the list size of each Menu item at the end
-                String mNewTitleAll = getResources().getString(R.string.navigation_drawer_submenu_general_allTasks) + " (" +taskDataListAllSize.toString()+")";
-                menu.findItem(R.id.nav_allTasks).setTitle(mNewTitleAll);
-
-                String mNewTitleFavorite = getResources().getString(R.string.navigation_drawer_submenu_general_favoriteTasks) + " (" +taskDataListFavoriteSize.toString()+")";
-                menu.findItem(R.id.nav_favoriteTasks).setTitle(mNewTitleFavorite);
-
-                String mNewTitleOverdue = getResources().getString(R.string.navigation_drawer_submenu_general_overdueTasks) + " (" +taskDataListOverdueSize.toString()+")";
-                menu.findItem(R.id.nav_overdueTasks).setTitle(mNewTitleOverdue);
-*/
+//TODO: REACTIVATE IF REQUIRED, BUT THIS SHOULD NOT BE THE CASE
+                //updateUserdataUI(currentUserData);
 
                 // update the menu items if there is new Group data loaded from the database
                 if (menuShouldBeUpdated){
@@ -248,15 +265,7 @@ public class NavigationActivity extends AppCompatActivity
         toggle.syncState();
 
 
-        final NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
-        navigationView.setNavigationItemSelectedListener(this);
 
-        //declare menu variable to be used in different methods
-        menu = navigationView.getMenu();
-
-        //------------------------------------------------------------------------------------------
-        //Initialize object fields for User data // SET VIEW FOR HEADER VIEW FIRST!!!!
-        View header = navigationView.getHeaderView(0);
 
         //Initialize Firestore Database of offline persistancy
         db = FirestoreHelper.getDatabase();
@@ -271,10 +280,7 @@ public class NavigationActivity extends AppCompatActivity
         //mAuth = FirebaseAuth.getInstance();
         //currentUser = mAuth.getCurrentUser();
 
-        //Initialize view objects
-        ivUserProfile = header.findViewById(R.id.ivUserProfile);
-        tvUserName = header.findViewById(R.id.tvUserName);
-        tvUserMail = header.findViewById(R.id.tvUserMail);
+
 
         //IMPLEMENTATION OF TOGGLE BUTTON IN THE NAVHEADER TO TOGGLE BETWEEN TWO MENU GROUPS (general and user Settings)
         ibtnToggleUserSettings = header.findViewById(R.id.ibtnToggleAccountSettings);
@@ -492,14 +498,21 @@ public class NavigationActivity extends AppCompatActivity
             String userMail = userDataObject.getUserMail();
             String userPhotoUrl = userDataObject.getUserPhotoUrl();
 
-            //update ui
+            Log.d(NAVIGATION_ACTIVITY_TAG, "The username for Navdrawer is: " + userDisplayName);
+            Log.d(NAVIGATION_ACTIVITY_TAG, "The usermail for Navdrawer is: " + userMail);
+
+            //update name and mail
             tvUserName.setText(userDisplayName);
             tvUserMail.setText(userMail);
 
-            //Downloads UserPic and updates ImageView
+
+
+
+            //TODO: USE LOCAL BITMAP INSTEAD ONLINE RESOURCE
+
+            // update ImageView for Profilepicture if a Picture URL has been provided
             if (userPhotoUrl != null){
-                ivUserProfile.setImageURI(Uri.parse(userPhotoUrl));
-                downloadUserPic();
+                ivUserProfile.setImageResource(R.drawable.default_profile_pic);
             }
         }
     }
@@ -529,7 +542,8 @@ public class NavigationActivity extends AppCompatActivity
     /***********************************************************************************************
      * LOAD SHARED PREFERENCES FROM FILE
      **********************************************************************************************/
-    public void loadSharedPreferencesListSizes(){
+    //TODO: METHOD CAN BE DELETED, AS THE LISTSIZE IS UPDATED VIA A DATABASE LISTENER
+/*    public void loadSharedPreferencesListSizes(){
 
         // 1. Open Shared Preference File
         SharedPreferences mSharedPref = getSharedPreferences("mSharePrefFile", 0);
@@ -537,7 +551,7 @@ public class NavigationActivity extends AppCompatActivity
         taskDataListAllSize = (mSharedPref.getInt("listSizeTasksAll", 0));
         taskDataListFavoriteSize = (mSharedPref.getInt("listSizeTasksFavorite", 0));
         taskDataListOverdueSize = (mSharedPref.getInt("listSizeTasksOverdue", 0));
-    }
+    }*/
 
     /***********************************************************************************************
      * SAVE SHARED PREFERENCES TO FILE
@@ -556,7 +570,6 @@ public class NavigationActivity extends AppCompatActivity
         Log.d("User3", "ActivUser-Stored: " + userID);
         Log.d("User4", "ActivUserHash-stored: " + userHashCode);
     }
-
 
     /***********************************************************************************************
      * THIS METHOD RETRIEVES ALL MEMBERSHIPS DATA FROM THE DATABASE BASED ON THE CURRENT USER ID
@@ -765,7 +778,6 @@ public class NavigationActivity extends AppCompatActivity
         }
     }
 
-
     /*******************************************************************************************
      * THIS METHOD DELETES SELECTED ITEM FROM FIRESTORE DATABASE (IS CALLED BY VIEWADAPTER     *
      *******************************************************************************************/
@@ -821,6 +833,10 @@ public class NavigationActivity extends AppCompatActivity
 
             //CREATE A NEW USERDATA OBJECT FROM DATA OF THE AUTHLISTENER
             currentUserData = new UserData(mUserID, mUserDisplayName, mUserMail, mUserPhone, mUserPhotoURL, mUserHashCode);
+            Log.d(NAVIGATION_ACTIVITY_TAG, "THE RETRIEVED USER ID IS: " + mUserID);
+            Log.d(NAVIGATION_ACTIVITY_TAG, "THE RETRIEVED NAME IS: " + mUserDisplayName);
+            Log.d(NAVIGATION_ACTIVITY_TAG, "THE RETRIEVED MAIL IS: " + mUserMail);
+
 
             //SET THE GLOBAL VARIABLE FOR FREQUENTLY USED "userID"
             userID = currentUserData.getUserId();
@@ -830,8 +846,13 @@ public class NavigationActivity extends AppCompatActivity
 
         }else{
             Toast.makeText(NavigationActivity.this, "User is logged out", Toast.LENGTH_LONG).show();
-            Intent userLoginStartActivityIntent = new Intent(NavigationActivity.this, UserLoginStartActivity.class);
-            NavigationActivity.this.startActivity(userLoginStartActivityIntent);
+
+            Intent userLoginProviderSelectionIntent = new Intent(NavigationActivity.this, UserLoginProviderSelectionActivity.class);
+            NavigationActivity.this.startActivity(userLoginProviderSelectionIntent);
+
+
+            /*Intent userLoginStartActivityIntent = new Intent(NavigationActivity.this, UserLoginStartActivity.class);
+            NavigationActivity.this.startActivity(userLoginStartActivityIntent);*/
         }
     }
 
@@ -957,20 +978,20 @@ public class NavigationActivity extends AppCompatActivity
                    }
 
                    //After all changes have been retrieved from the database, update all fragments with the new Data
+//TODO: implement this!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                    //updateAllFragments(mUpdatedUserTasksList);
 
                    //Update the menu titles, with the new amount of present tasks
-                   updateMenuItemTitle(mUpdatedUserTasksList);
+                   updateMenuItemTitlesForUserTasks(mUpdatedUserTasksList);
                }
             }
         });
     }
 
-
     /*********************************************************************************************
      * THIS METHOD UPDATES THE MENU TITLES BASED ON THE NEW TASK COUNT IN EACH CATEGORY          *
      *********************************************************************************************/
-    public void updateMenuItemTitle(List<TaskData> mUpdatedUserTaskList){
+    public void updateMenuItemTitlesForUserTasks(List<TaskData> mUpdatedUserTaskList){
 
         //----------------------------------------------
         //UPDATE THE TASK COUNT FOR THE THREE CATEGORIES

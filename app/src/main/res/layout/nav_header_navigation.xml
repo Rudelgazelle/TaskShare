@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<GridLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
+    android:layout_height="@dimen/nav_header_height"
     android:background="@drawable/side_nav_bar"
     android:gravity="bottom"
     android:orientation="horizontal"
@@ -10,57 +11,64 @@
     android:paddingLeft="@dimen/activity_horizontal_margin"
     android:paddingRight="@dimen/activity_horizontal_margin"
     android:paddingTop="30dp"
-    android:theme="@style/ThemeOverlay.AppCompat.Dark">
+    android:theme="@style/ThemeOverlay.AppCompat.Dark"
+    tools:layout_editor_absoluteY="81dp">
 
-        <ImageView
+        <de.hdodenhof.circleimageview.CircleImageView
             android:id="@+id/ivUserProfile"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_gravity="bottom"
-            android:layout_column="1"
-            android:layout_row="1"
-            android:layout_rowSpan="4"
-            android:adjustViewBounds="true"
-            android:maxHeight="200px"
-            android:maxWidth="200px"
-            android:paddingTop="@dimen/nav_header_vertical_spacing"
-            android:paddingRight="10dp"
+
+            android:layout_alignParentStart="true"
+            android:layout_marginTop="16dp"
+            android:maxHeight="64dp"
+            android:maxWidth="64dp"
+            android:src="@drawable/default_profile_pic"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
             app:srcCompat="@mipmap/ic_launcher_round" />
 
         <TextView
             android:id="@+id/tvUserName"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_column="2"
-            android:layout_row="3"
-            android:layout_gravity="center_vertical"
-            android:paddingTop="@dimen/nav_header_vertical_spacing"
-            android:paddingBottom="@dimen/activity_horizontal_margin"
-            android:layout_margin="3dp"
+            android:layout_above="@+id/tvUserMail"
+            android:layout_alignStart="@+id/ivUserProfile"
+            android:layout_marginBottom="8dp"
+            android:layout_marginStart="16dp"
+            android:layout_marginTop="8dp"
             android:text="Android Studio"
-            android:textAppearance="@style/TextAppearance.AppCompat.Body1" />
+            android:textAppearance="@style/TextAppearance.AppCompat.Body1"
+            app:layout_constraintBottom_toTopOf="@+id/tvUserMail"
+            app:layout_constraintStart_toStartOf="@+id/ivUserProfile"
+            app:layout_constraintTop_toBottomOf="@+id/ivUserProfile" />
 
         <TextView
             android:id="@+id/tvUserMail"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_column="2"
-            android:layout_gravity="bottom"
-            android:layout_row="3"
-            android:layout_margin="3dp"
-            android:text="android.studio@android.com" />
+            android:layout_alignParentBottom="true"
+            android:layout_alignStart="@+id/ivUserProfile"
+            android:layout_marginBottom="8dp"
+            android:layout_marginTop="8dp"
+            android:text="android.studio@android.com"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="@+id/tvUserName"
+            app:layout_constraintTop_toTopOf="@+id/ibtnToggleAccountSettings" />
 
         <ImageButton
             android:id="@+id/ibtnToggleAccountSettings"
             android:layout_width="20dp"
             android:layout_height="20dp"
-            android:layout_column="4"
-            android:layout_gravity="bottom"
-            android:layout_margin="3dp"
-            android:layout_row="1"
-            android:layout_rowSpan="3"
+            android:layout_alignParentEnd="true"
+            android:layout_alignTop="@+id/tvUserMail"
+            android:layout_marginBottom="8dp"
+            android:layout_marginEnd="8dp"
             android:background="@drawable/ic_action_toggle_account_settings_down"
-            android:contentDescription="test" />
+            android:contentDescription="test"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent" />
 
-</GridLayout>
+
+</android.support.constraint.ConstraintLayout>
 
