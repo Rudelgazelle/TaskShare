@@ -219,15 +219,19 @@ public class TaskDataViewAdapter extends RecyclerView.Adapter<TaskDataViewAdapte
                 //GET THE POSITION OF THE ITEM THAT HAS BEEN CLICKED
                 int pos = holder.getAdapterPosition();
 
-                //FILL NEW LISTITEM WITH DATA FROM THE SPECIFIC POSITION IN THE ITEMLIST
+                //Set the task id of the selected Item to local variable
                 String taskID = mTaskDataList.get(pos).getId();
+
+                //retrieved current user
+                SharedPreferences mSharedPref = context.getSharedPreferences("mSharePrefFile", 0);
+                String mUserId = (mSharedPref.getString("userID", ""));
 
                 //REMOVE ITEM FROM THE RECYCLERVIEW
                 removeItem(pos);
 
                 //START METHOD FROM NAVIGATIONACTIVITY TO DELET ITEM FROM DATABASE
                 NavigationActivity navigationActivity = new NavigationActivity();
-                navigationActivity.deleteUserTaskFromDatabase(taskID);
+                navigationActivity.deleteUserTaskFromDatabase(mUserId, taskID);
             }
         });
 

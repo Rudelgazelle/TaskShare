@@ -3,6 +3,7 @@ package android_development.taskshare;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
@@ -28,13 +29,14 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions;
+import com.bumptech.glide.request.RequestOptions;
 import com.bumptech.glide.request.target.BitmapImageViewTarget;
 import com.firebase.ui.storage.images.FirebaseImageLoader;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.auth.UserProfileChangeRequest;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.firestore.CollectionReference;
@@ -194,12 +196,8 @@ public class NavigationActivity extends AppCompatActivity
                 if (mCurrentUser == null) {
                     Toast.makeText(NavigationActivity.this, "User is logged out", Toast.LENGTH_LONG).show();
 
-                    Intent userLoginProviderSelectionIntent = new Intent(NavigationActivity.this, UserLoginProviderSelectionActivity.class);
+                    Intent userLoginProviderSelectionIntent = new Intent(NavigationActivity.this, LoginProviderSelectionActivity.class);
                     NavigationActivity.this.startActivity(userLoginProviderSelectionIntent);
-
-
-                    /*Intent userLoginStartActivityIntent = new Intent(NavigationActivity.this, UserLoginStartActivity.class);
-                    NavigationActivity.this.startActivity(userLoginStartActivityIntent);*/
                 }
 
                 if (mCurrentUser != null) {
@@ -378,6 +376,8 @@ public class NavigationActivity extends AppCompatActivity
         int id = item.getItemId();
         //call the method and parse the id of the selected item
         displaySelectedScreen(id);
+        // Highlight the selected item has been done by NavigationView
+        item.setChecked(true);
         return true;
     }
 
@@ -445,13 +445,13 @@ public class NavigationActivity extends AppCompatActivity
             ft.replace(R.id.content_main_navigation, fragment);
             //commit the changes
             ft.commit();
-
             //Set the title of the activity
             getSupportActionBar().setTitle(activityTitle);
         }
 
         //the navigation drawer will be closed after selecting an item
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
+        // Close the navigation drawer
         drawer.closeDrawer(GravityCompat.START);
     }
 
@@ -505,36 +505,76 @@ public class NavigationActivity extends AppCompatActivity
             tvUserName.setText(userDisplayName);
             tvUserMail.setText(userMail);
 
-
-
-
             //TODO: USE LOCAL BITMAP INSTEAD ONLINE RESOURCE
 
-            // update ImageView for Profilepicture if a Picture URL has been provided
-            if (userPhotoUrl != null){
-                ivUserProfile.setImageResource(R.drawable.default_profile_pic);
+            // set the default Image, if a Picture URL has not been provided
+            if (userPhotoUrl == null){
+
+                Bitmap bitmap = BitmapFactory.decodeResource(getResources(), R.drawable.default_profile_pic);
+                RoundedBitmapDrawable roundedProfilePicture = RoundedBitmapDrawableFactory.create(getResources(), bitmap);
+                roundedProfilePicture.setCircular(true);
+
+                ivUserProfile.setImageDrawable(roundedProfilePicture);
+
+/*                GlideApp.with(this)
+                        .asBitmap()
+                        .apply(new RequestOptions().centerCrop().dontAnimate().placeholder(R.drawable.default_profile_pic))
+                        .into(new BitmapImageViewTarget(ivUserProfile) {
+
+                            @Override
+                            protected void setResource(Bitmap resource) {
+                                RoundedBitmapDrawable circularBitmapDrawable =
+                                        RoundedBitmapDrawableFactory.create(getResources(), resource);
+                                circularBitmapDrawable.setCircular(true);
+                                ivUserProfile.setImageDrawable(circularBitmapDrawable);
+                            }
+                        });*/
+            }else {
+                //If user has set an image URI, download that image to local storage and set the Image to imageview
+//TODO: Implement the function, where A local image will be stored under the name "profile", if that does not exist. Then set the defalt picture
+                //ivUserProfile.setImageURI(userProfilePhotoUrl);
+
+                Bitmap bitmap = BitmapFactory.decodeResource(getResources(), R.drawable.default_profile_pic);
+                RoundedBitmapDrawable roundedProfilePicture = RoundedBitmapDrawableFactory.create(getResources(), bitmap);
+                roundedProfilePicture.setCircular(true);
+                ivUserProfile.setImageDrawable(roundedProfilePicture);
+
+                /*Glide.with(this)
+                        .asBitmap()
+                        .load(userProfilePhotoUrl)
+                        .apply(new RequestOptions().centerCrop().dontAnimate().placeholder(R.drawable.default_profile_pic))
+                        .into(new BitmapImageViewTarget(ivUserProfile) {
+
+                            @Override
+                            protected void setResource(Bitmap resource) {
+                                RoundedBitmapDrawable circularBitmapDrawable =
+                                        RoundedBitmapDrawableFactory.create(getResources(), resource);
+                                circularBitmapDrawable.setCircular(true);
+                                ivUserProfile.setImageDrawable(circularBitmapDrawable);
+                            }
+                        });*/
+
             }
         }
     }
 
     public void downloadUserPic(){
 
+        // Reference to an image file in Firebase Storage
         StorageReference storageReferencePicURL = FirebaseStorage.getInstance().getReference();
 
-        // Reference to an image file in Firebase Storage
-//TODO: Implement a Query string based on variables; not hard coded
         try {
             // Create a storage reference from our app
-            storageReferencePicURL = storageReferencePicURL.child("images/" + userID + "/787A5361.jpg");;
+            storageReferencePicURL = storageReferencePicURL.child("images/OQ7CjskosBasyXoBB5BtkkfJ92G2/ddb25438-5410-43de-a067-f070a39291fb.jpg");;
         }catch (NullPointerException e){
             Log.d(NAVIGATION_ACTIVITY_TAG, "User has no uploaded User Photo!!!");
             //STEP OUT OF THE METHOD
             return;
         }
 
-        // Load the image using Glide
-        Glide.with(this /* context */)
-                .using(new FirebaseImageLoader())
+        // Download directly from StorageReference using Glide
+        // (See MyAppGlideModule for Loader registration)
+        GlideApp.with(this)
                 .load(storageReferencePicURL)
                 .into(ivUserProfile);
     }
@@ -781,12 +821,12 @@ public class NavigationActivity extends AppCompatActivity
     /*******************************************************************************************
      * THIS METHOD DELETES SELECTED ITEM FROM FIRESTORE DATABASE (IS CALLED BY VIEWADAPTER     *
      *******************************************************************************************/
-    public void deleteUserTaskFromDatabase(String taskId){
+    public void deleteUserTaskFromDatabase(String userId, String taskId){
         Log.d(NAVIGATION_ACTIVITY_TAG, "The provided taskID is: " + taskId);
-        Log.d(NAVIGATION_ACTIVITY_TAG, "The userID is: " + userID);
+        Log.d(NAVIGATION_ACTIVITY_TAG, "The userID is: " + userId);
 
         FirebaseFirestore db = FirestoreHelper.getDatabase();
-        DocumentReference taskDocRef = db.collection("users").document("acSIBra6pUcemLPBlHFnZLNuchy2").collection("tasks").document(taskId);
+        DocumentReference taskDocRef = db.collection("users").document(userId).collection("tasks").document(taskId);
         taskDocRef.delete();
     }
 
@@ -806,7 +846,7 @@ public class NavigationActivity extends AppCompatActivity
         mAuth.signOut();
 
         //After logging out the user the view is navigated back to the login activity
-        Intent loginActivityIntent = new Intent(NavigationActivity.this, UserLoginStartActivity.class);
+        Intent loginActivityIntent = new Intent(NavigationActivity.this, LoginProviderSelectionActivity.class);
         NavigationActivity.this.startActivity(loginActivityIntent);
     }
 
@@ -847,12 +887,8 @@ public class NavigationActivity extends AppCompatActivity
         }else{
             Toast.makeText(NavigationActivity.this, "User is logged out", Toast.LENGTH_LONG).show();
 
-            Intent userLoginProviderSelectionIntent = new Intent(NavigationActivity.this, UserLoginProviderSelectionActivity.class);
+            Intent userLoginProviderSelectionIntent = new Intent(NavigationActivity.this, LoginProviderSelectionActivity.class);
             NavigationActivity.this.startActivity(userLoginProviderSelectionIntent);
-
-
-            /*Intent userLoginStartActivityIntent = new Intent(NavigationActivity.this, UserLoginStartActivity.class);
-            NavigationActivity.this.startActivity(userLoginStartActivityIntent);*/
         }
     }
 

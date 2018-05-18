@@ -20,21 +20,9 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
         <activity
-            android:name=".TaskOverviewActivity"
-            android:label="@string/app_name"
-            android:theme="@style/AppTheme.NoActionBar">
-
-            <!--
-                <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-            -->
-        </activity>
-        <activity
             android:name=".NavigationActivity"
             android:label="@string/title_activity_navigation"
+            android:screenOrientation="portrait"
             android:theme="@style/AppTheme.NoActionBar">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -42,7 +30,8 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".UserSettingsActivity">
+        <activity android:name=".UserSettingsActivity"
+            android:screenOrientation="portrait">
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"
                 android:value="android_development.taskshare.NavigationActivity" />
@@ -50,14 +39,8 @@
         <activity
             android:name=".AddTaskActivity"
             android:label="@string/title_activity_add_task"
+            android:screenOrientation="portrait"
             android:theme="@style/AppTheme.NoActionBar">
-            <meta-data
-                android:name="android.support.PARENT_ACTIVITY"
-                android:value="android_development.taskshare.NavigationActivity" />
-        </activity>
-        <activity
-            android:name=".UserLoginActivity"
-            android:label="@string/title_activity_user_login">
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"
                 android:value="android_development.taskshare.NavigationActivity" />
@@ -65,24 +48,17 @@
         <activity
             android:name=".TaskDataDetailsActivity"
             android:label="@string/title_activity_task_data_details"
+            android:screenOrientation="portrait"
             android:parentActivityName=".NavigationActivity"
             android:theme="@style/AppTheme.NoActionBar">
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"
                 android:value="android_development.taskshare.NavigationActivity" />
         </activity>
-        <activity android:name=".UserLoginStartActivity" />
-        <activity
-            android:name=".UserRegistrationActivity"
-            android:label="@string/title_activity_user_registration"
-            android:parentActivityName=".UserLoginStartActivity">
-            <meta-data
-                android:name="android.support.PARENT_ACTIVITY"
-                android:value="android_development.taskshare.UserLoginStartActivity" />
-        </activity>
         <activity
             android:name=".SettingsActivity"
             android:label="@string/title_activity_settings"
+            android:screenOrientation="portrait"
             android:parentActivityName=".NavigationActivity"
             android:theme="@style/AppTheme.NoActionBar">
             <meta-data
@@ -92,6 +68,7 @@
         <activity
             android:name=".SettingsActivity2"
             android:label="@string/title_activity_settings2"
+            android:screenOrientation="portrait"
             android:parentActivityName=".NavigationActivity">
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"
@@ -100,6 +77,7 @@
         <activity
             android:name=".AddGroup"
             android:label="@string/title_activity_add_group"
+            android:screenOrientation="portrait"
             android:parentActivityName=".NavigationActivity"
             android:theme="@style/AppTheme.NoActionBar">
             <meta-data
@@ -109,6 +87,7 @@
         <activity
             android:name=".GroupDetailsActivity"
             android:label="@string/title_activity_group_details"
+            android:screenOrientation="portrait"
             android:parentActivityName=".NavigationActivity"
             android:theme="@style/AppTheme.NoActionBar">
             <meta-data
@@ -118,6 +97,7 @@
         <activity
             android:name=".AddGroupTaskActivity"
             android:label="@string/title_activity_add_group_task"
+            android:screenOrientation="portrait"
             android:parentActivityName=".NavigationActivity"
             android:theme="@style/AppTheme.NoActionBar">
             <meta-data
@@ -125,24 +105,19 @@
                 android:value="android_development.taskshare.NavigationActivity" />
         </activity>
         <activity
-            android:name=".LoginWithPhoneActivity"
-            android:label="@string/title_activity_login_with_phone"
-            android:parentActivityName=".UserLoginStartActivity"
-            android:theme="@style/AppTheme.NoActionBar">
-            <meta-data
-                android:name="android.support.PARENT_ACTIVITY"
-                android:value="android_development.taskshare.UserLoginStartActivity" />
-        </activity>
-        <activity
             android:name=".UserRegistrationAddData"
             android:label="@string/title_activity_user_registration_add_data"
-            android:parentActivityName=".UserLoginStartActivity"
+            android:screenOrientation="portrait"
+            android:parentActivityName=".LoginProviderSelectionActivity"
             android:theme="@style/AppTheme.NoActionBar">
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"
-                android:value="android_development.taskshare.UserLoginStartActivity" />
+                android:value="android_development.taskshare.LoginProviderSelectionActivity" />
         </activity>
-        <activity android:name=".UserLoginProviderSelectionActivity"></activity>
+        <activity
+            android:name=".LoginProviderSelectionActivity"
+            android:screenOrientation="portrait">
+        </activity>
     </application>
 
 </manifest>

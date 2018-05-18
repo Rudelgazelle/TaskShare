@@ -12,12 +12,10 @@ import com.firebase.ui.auth.AuthUI;
 import com.firebase.ui.auth.ErrorCodes;
 import com.firebase.ui.auth.IdpResponse;
 import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.auth.FirebaseUser;
 
 import java.util.Arrays;
-import java.util.List;
 
-public class UserLoginProviderSelectionActivity extends AppCompatActivity {
+public class LoginProviderSelectionActivity extends AppCompatActivity {
 
     private static final int RC_SIGN_IN = 123;
     public static final String USER_LOGIN_PROVIDER_SELECTION_KEY = "UserLoginProviderSelection";
@@ -79,7 +77,7 @@ public class UserLoginProviderSelectionActivity extends AppCompatActivity {
         if (auth.getCurrentUser() != null) {
 
             //USER IS LOGGED IN, OPEN THE REGISTRATIONACTIVITY
-            Intent navigationActivityIntent = new Intent(UserLoginProviderSelectionActivity.this, NavigationActivity.class);
+            Intent navigationActivityIntent = new Intent(LoginProviderSelectionActivity.this, NavigationActivity.class);
             startActivity(navigationActivityIntent);
             finish();
         }
@@ -92,7 +90,7 @@ public class UserLoginProviderSelectionActivity extends AppCompatActivity {
         if (resultCode == RESULT_OK) {
 
             //USER IS LOGGED IN, OPEN THE REGISTRATIONACTIVITY
-            Intent navigationActivityIntent = new Intent(UserLoginProviderSelectionActivity.this, NavigationActivity.class);
+            Intent navigationActivityIntent = new Intent(LoginProviderSelectionActivity.this, NavigationActivity.class);
             startActivity(navigationActivityIntent);
             finish();
 

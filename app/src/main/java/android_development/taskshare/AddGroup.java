@@ -80,6 +80,7 @@ public class AddGroup extends AppCompatActivity {
     private TextView tvMemberName;
     private TextView tvMemberMail;
     private Button btnAddMember;
+    ImageButton ibtnSaveData;
 
     RecyclerView recyclerViewGroupMember;
     GroupMemberViewAdapter adapter;
@@ -231,6 +232,12 @@ public class AddGroup extends AppCompatActivity {
             @Override
             public void onSuccess(Void aVoid) {
                 Log.d(TAG, "Usermembership DocumentSnapshot successfully written!");
+
+                //----------------------------------------------------------------------------------
+                //RETURN BACK TO THE NAVIGATION AVTIVITY
+                //----------------------------------------------------------------------------------
+                Intent addTaskActivityIntent = new Intent(AddGroup.this, NavigationActivity.class);
+                AddGroup.this.startActivity(addTaskActivityIntent);
             }
         }).addOnFailureListener(new OnFailureListener() {
             @Override
@@ -238,6 +245,8 @@ public class AddGroup extends AppCompatActivity {
                 Log.w(TAG, "Error writing Usermembership document", e);
             }
         });
+
+
     }
 
     public void loadData (View view){

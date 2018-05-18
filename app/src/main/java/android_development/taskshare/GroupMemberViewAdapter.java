@@ -3,6 +3,7 @@ package android_development.taskshare;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.provider.ContactsContract;
 import android.support.v4.graphics.drawable.RoundedBitmapDrawable;
 import android.support.v4.graphics.drawable.RoundedBitmapDrawableFactory;
@@ -15,7 +16,12 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.resource.bitmap.BitmapDrawableDecoder;
+import com.bumptech.glide.load.resource.bitmap.BitmapDrawableResource;
+import com.bumptech.glide.load.resource.bitmap.BitmapResource;
+import com.bumptech.glide.request.RequestOptions;
 import com.bumptech.glide.request.target.BitmapImageViewTarget;
+import com.firebase.ui.auth.data.model.Resource;
 
 import org.w3c.dom.Text;
 
@@ -55,23 +61,47 @@ public class GroupMemberViewAdapter extends RecyclerView.Adapter<GroupMemberView
         //INSERT A CIRCULAR IMAGEVIEW WITH THE USE OF GLIDE
         // ------------------------------------------------
 
-        Glide.with(context)
-                .load(mUserDataItem.getUserPhotoUrl())
-                .asBitmap()
-                .centerCrop()
-                .dontAnimate()
-                .placeholder(R.drawable.default_profile_pic)
-                .error(R.drawable.default_profile_pic)
-                .into(new BitmapImageViewTarget(holder.ivMemberProfilePic) {
+//TODO:  this Worked, but replaced with the glide method option!!!!
+        /*Bitmap bitmap = BitmapFactory.decodeResource(context.getResources(), R.drawable.default_profile_pic);
+        RoundedBitmapDrawable roundedProfilePicture = RoundedBitmapDrawableFactory.create(context.getResources(), bitmap);
+        roundedProfilePicture.setCircular(true);
+        holder.ivMemberProfilePic.setImageDrawable(roundedProfilePicture);*/
 
-            @Override
-            protected void setResource(Bitmap resource) {
-                RoundedBitmapDrawable circularBitmapDrawable =
-                        RoundedBitmapDrawableFactory.create(context.getResources(), resource);
-                circularBitmapDrawable.setCircular(true);
-                holder.ivMemberProfilePic.setImageDrawable(circularBitmapDrawable);
-            }
-        });
+        Log.d("GroupMemberViewAdapter", "User Phot URL is: " + mUserDataItem.getUserPhotoUrl());
+
+        if (mUserDataItem.getUserPhotoUrl() == null){
+
+            GlideApp.with(context)
+                    .asBitmap()
+                    .apply(new RequestOptions().centerCrop().dontAnimate().placeholder(R.drawable.default_profile_pic))
+                    .load(R.drawable.default_profile_pic)
+                    .into(new BitmapImageViewTarget(holder.ivMemberProfilePic) {
+
+                        @Override
+                        protected void setResource(Bitmap resource) {
+                            RoundedBitmapDrawable circularBitmapDrawable =
+                                    RoundedBitmapDrawableFactory.create(context.getResources(), resource);
+                            circularBitmapDrawable.setCircular(true);
+                            holder.ivMemberProfilePic.setImageDrawable(circularBitmapDrawable);
+                        }
+                    });
+        } else {
+
+            GlideApp.with(context)
+                    .asBitmap()
+                    .apply(new RequestOptions().centerCrop().dontAnimate().placeholder(R.drawable.default_profile_pic))
+                    .load(mUserDataItem.getUserPhotoUrl())
+                    .into(new BitmapImageViewTarget(holder.ivMemberProfilePic) {
+
+                        @Override
+                        protected void setResource(Bitmap resource) {
+                            RoundedBitmapDrawable circularBitmapDrawable =
+                                    RoundedBitmapDrawableFactory.create(context.getResources(), resource);
+                            circularBitmapDrawable.setCircular(true);
+                            holder.ivMemberProfilePic.setImageDrawable(circularBitmapDrawable);
+                        }
+                    });
+        }
 
 //TODO: THIS IS NOT REQUIRED HERE !!!!!!!!!!!!!!!!!!!! IT CAN BE USED IN THE GROUPS INFORMATION PANEL OF EXISTING GROUPS
 /*        //--------------------------------------------------------------

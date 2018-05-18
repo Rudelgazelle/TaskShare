@@ -14,7 +14,7 @@
     android:theme="@style/ThemeOverlay.AppCompat.Dark"
     tools:layout_editor_absoluteY="81dp">
 
-        <de.hdodenhof.circleimageview.CircleImageView
+<!--        <de.hdodenhof.circleimageview.CircleImageView
             android:id="@+id/ivUserProfile"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -26,7 +26,20 @@
             android:src="@drawable/default_profile_pic"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent"
-            app:srcCompat="@mipmap/ic_launcher_round" />
+            app:srcCompat="@mipmap/ic_launcher_round" />-->
+
+        <ImageView
+            android:id="@+id/ivUserProfile"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentStart="true"
+            android:layout_marginTop="16dp"
+            android:maxHeight="64dp"
+            android:maxWidth="64dp"
+            android:src="@drawable/default_profile_pic"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
 
         <TextView
             android:id="@+id/tvUserName"
@@ -68,7 +81,6 @@
             android:contentDescription="test"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent" />
-
 
 </android.support.constraint.ConstraintLayout>
 
